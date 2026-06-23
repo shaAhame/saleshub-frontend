@@ -57,6 +57,7 @@ export default function SalesEntry() {
     if (!form.customer_name) return alert('Customer Name is required');
     if (!form.contact) return alert('Contact is required');
     if (!form.item_description) return alert('Item Description is required');
+    if (!form.serial_imei) return alert('Serial Number / IMEI is required');
     if (!form.payment_method) return alert('Payment Method is required');
     if (!form.sales_person) return alert('Sales Person is required');
     setSaving(true);
@@ -215,16 +216,24 @@ export default function SalesEntry() {
                 <div className="grid-2">
                   <div className="form-group">
                     <label>Customer Name <Required /></label>
-                    <input className="form-control" placeholder="Full name" value={form.customer_name} onChange={e => set('customer_name', e.target.value)} />
+                    <input className="form-control" placeholder="Full name"
+                      value={form.customer_name} onChange={e => set('customer_name', e.target.value)} />
                   </div>
                   <div className="form-group">
                     <label>Contact <Required /></label>
-                    <input className="form-control" placeholder="Phone number" value={form.contact} onChange={e => set('contact', e.target.value)} />
+                    <input className="form-control" placeholder="Phone number"
+                      value={form.contact} onChange={e => set('contact', e.target.value)} />
                   </div>
                 </div>
                 <div className="form-group">
                   <label>Item Description <Required /></label>
-                  <input className="form-control" placeholder="e.g. Apple iPhone 17 Pro Max 256GB" value={form.item_description} onChange={e => set('item_description', e.target.value)} />
+                  <input className="form-control" placeholder="e.g. Apple iPhone 17 Pro Max 256GB"
+                    value={form.item_description} onChange={e => set('item_description', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label>Serial Number / IMEI <Required /></label>
+                  <input className="form-control" placeholder="Enter as text — e.g. 350922948431888"
+                    value={form.serial_imei} onChange={e => set('serial_imei', e.target.value)} />
                 </div>
                 <div className="grid-3">
                   <div className="form-group">
@@ -236,7 +245,8 @@ export default function SalesEntry() {
                   </div>
                   <div className="form-group">
                     <label>Sales Person <Required /></label>
-                    <input className="form-control" placeholder="Name" value={form.sales_person} onChange={e => set('sales_person', e.target.value)} />
+                    <input className="form-control" placeholder="Name"
+                      value={form.sales_person} onChange={e => set('sales_person', e.target.value)} />
                   </div>
                   <div className="form-group">
                     <label>Out Status <Required /></label>
@@ -260,24 +270,24 @@ export default function SalesEntry() {
                 </div>
                 <div className="grid-2">
                   <div className="form-group">
-                    <label>Serial Number / IMEI</label>
-                    <input className="form-control" placeholder="Enter as text" value={form.serial_imei} onChange={e => set('serial_imei', e.target.value)} />
-                  </div>
-                  <div className="form-group">
                     <label>Invoice Value (Rs.)</label>
-                    <input type="number" className="form-control" placeholder="0.00" value={form.invoice_value} onChange={e => set('invoice_value', e.target.value)} />
+                    <input type="number" className="form-control" placeholder="0.00"
+                      value={form.invoice_value} onChange={e => set('invoice_value', e.target.value)} />
                   </div>
                   <div className="form-group">
                     <label>ACC INV No.</label>
-                    <input className="form-control" value={form.acc_inv_no} onChange={e => set('acc_inv_no', e.target.value)} />
+                    <input className="form-control"
+                      value={form.acc_inv_no} onChange={e => set('acc_inv_no', e.target.value)} />
                   </div>
                   <div className="form-group">
                     <label>INV No.</label>
-                    <input className="form-control" value={form.inv_no} onChange={e => set('inv_no', e.target.value)} />
+                    <input className="form-control"
+                      value={form.inv_no} onChange={e => set('inv_no', e.target.value)} />
                   </div>
                   <div className="form-group">
                     <label>Cashier</label>
-                    <input className="form-control" value={form.cashier} onChange={e => set('cashier', e.target.value)} />
+                    <input className="form-control"
+                      value={form.cashier} onChange={e => set('cashier', e.target.value)} />
                   </div>
                   <div className="form-group">
                     <label>Google Review</label>
@@ -290,11 +300,12 @@ export default function SalesEntry() {
                 </div>
                 <div className="form-group">
                   <label>Remarks</label>
-                  <textarea className="form-control" rows={2} value={form.remarks} onChange={e => set('remarks', e.target.value)} />
+                  <textarea className="form-control" rows={2}
+                    value={form.remarks} onChange={e => set('remarks', e.target.value)} />
                 </div>
               </div>
 
-              {/* Supplier Toggle */}
+              {/* Outside Purchase Toggle */}
               <div style={{ border: '1.5px solid #FDE68A', borderRadius: 10, padding: 16, background: '#FFFBEB' }}>
                 <div className="flex items-center gap-2" style={{ marginBottom: showSupplier ? 12 : 0 }}>
                   <input type="checkbox" id="supplierToggle" checked={showSupplier}
@@ -308,11 +319,13 @@ export default function SalesEntry() {
                   <div className="grid-2" style={{ marginTop: 12 }}>
                     <div className="form-group">
                       <label>Supplier Name</label>
-                      <input className="form-control" placeholder="Supplier name" value={form.supplier_name} onChange={e => set('supplier_name', e.target.value)} />
+                      <input className="form-control" placeholder="Supplier name"
+                        value={form.supplier_name} onChange={e => set('supplier_name', e.target.value)} />
                     </div>
                     <div className="form-group">
                       <label>Cost (Rs.)</label>
-                      <input type="number" className="form-control" placeholder="0.00" value={form.cost} onChange={e => set('cost', e.target.value)} />
+                      <input type="number" className="form-control" placeholder="0.00"
+                        value={form.cost} onChange={e => set('cost', e.target.value)} />
                     </div>
                   </div>
                 )}
