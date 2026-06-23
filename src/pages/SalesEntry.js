@@ -9,9 +9,9 @@ const BRANCH_BADGE = { Prime: 'badge-prime', Liberty: 'badge-liberty', Marino: '
 
 const empty = (branch, date) => ({
   branch: branch || '', sale_date: date || format(new Date(), 'yyyy-MM-dd'),
-  row_number: '', customer_name: '', acc_inv_no: '', contact: '', inv_no: '',
-  item_description: '', serial_imei: '', supplier_name: '', cost: '',
-  invoice_value: '', payment_method: '', sales_person: '', out_status: '',
+  customer_name: '', contact: '', item_description: '', serial_imei: '',
+  acc_inv_no: '', inv_no: '', supplier_name: '', cost: '',
+  invoice_value: '', payment_method: '', sales_person: '', out_status: 'NO',
   remarks: '', cashier: '', google_review: ''
 });
 
@@ -20,11 +20,12 @@ export default function SalesEntry() {
   const [sales, setSales] = useState([]);
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [branch, setBranch] = useState(user?.role === 'admin' ? 'Prime' : user?.branch);
-  const [modal, setModal] = useState(null); // null | 'add' | 'edit'
+  const [modal, setModal] = useState(null);
   const [form, setForm] = useState(empty(branch, date));
   const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [showSupplier, setShowSupplier] = useState(false);
 
   const fetchSales = useCallback(async () => {
     const params = { date, branch };
@@ -36,6 +37,7 @@ export default function SalesEntry() {
 
   const openAdd = () => {
     setForm(empty(branch, date));
+    setShowSupplier(false);
     setEditId(null);
     setModal('add');
   };
@@ -46,11 +48,17 @@ export default function SalesEntry() {
       sale_date: sale.sale_date ? format(new Date(sale.sale_date), 'yyyy-MM-dd') : date,
       cost: sale.cost || '', invoice_value: sale.invoice_value || ''
     });
+    setShowSupplier(!!(sale.supplier_name || sale.cost));
     setEditId(sale.id);
     setModal('edit');
   };
 
   const handleSave = async () => {
+    if (!form.customer_name) return alert('Customer Name is required');
+    if (!form.contact) return alert('Contact is required');
+    if (!form.item_description) return alert('Item Description is required');
+    if (!form.payment_method) return alert('Payment Method is required');
+    if (!form.sales_person) return alert('Sales Person is required');
     setSaving(true);
     try {
       if (editId) {
@@ -76,6 +84,7 @@ export default function SalesEntry() {
   };
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const Required = () => <span style={{ color: 'var(--danger)', marginLeft: 2 }}>*</span>;
 
   return (
     <div>
@@ -128,7 +137,7 @@ export default function SalesEntry() {
             <table>
               <thead>
                 <tr>
-                  <th>#</th>
+                  <th>No</th>
                   <th>Customer</th>
                   <th>Contact</th>
                   <th>Item</th>
@@ -143,7 +152,7 @@ export default function SalesEntry() {
               <tbody>
                 {sales.map((s, i) => (
                   <tr key={s.id}>
-                    <td style={{ color: 'var(--text-muted)' }}>{s.row_number || i + 1}</td>
+                    <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
                     <td style={{ fontWeight: 500 }}>{s.customer_name}</td>
                     <td>{s.contact}</td>
                     <td>{s.item_description}</td>
@@ -151,7 +160,13 @@ export default function SalesEntry() {
                     <td style={{ fontWeight: 600 }}>{s.invoice_value ? `Rs. ${Number(s.invoice_value).toLocaleString()}` : ''}</td>
                     <td>{s.payment_method}</td>
                     <td>{s.sales_person}</td>
-                    <td>{s.out_status}</td>
+                    <td>
+                      <span style={{
+                        background: s.out_status === 'YES' ? '#D1FAE5' : '#FEE2E2',
+                        color: s.out_status === 'YES' ? '#065F46' : '#991B1B',
+                        padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700
+                      }}>{s.out_status || 'NO'}</span>
+                    </td>
                     <td>
                       <div className="flex gap-2">
                         <button className="btn btn-outline btn-sm" onClick={() => openEdit(s)}>✏️ Edit</button>
@@ -166,7 +181,7 @@ export default function SalesEntry() {
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Modal */}
       {modal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setModal(null)}>
           <div className="modal">
@@ -175,7 +190,13 @@ export default function SalesEntry() {
               <button className="btn btn-ghost btn-sm" onClick={() => setModal(null)}>✕</button>
             </div>
             <div className="modal-body">
-              <div className="grid-3">
+
+              {/* Date + Branch */}
+              <div className="grid-2">
+                <div className="form-group">
+                  <label>Date</label>
+                  <input type="date" className="form-control" value={form.sale_date} onChange={e => set('sale_date', e.target.value)} />
+                </div>
                 {user?.role === 'admin' && (
                   <div className="form-group">
                     <label>Branch</label>
@@ -184,84 +205,119 @@ export default function SalesEntry() {
                     </select>
                   </div>
                 )}
-                <div className="form-group">
-                  <label>Date</label>
-                  <input type="date" className="form-control" value={form.sale_date} onChange={e => set('sale_date', e.target.value)} />
+              </div>
+
+              {/* Required Fields */}
+              <div style={{ background: '#F8F7FF', border: '1.5px solid #E0E7FF', borderRadius: 10, padding: 16, marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--primary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  ✳️ Required Information
+                </div>
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label>Customer Name <Required /></label>
+                    <input className="form-control" placeholder="Full name" value={form.customer_name} onChange={e => set('customer_name', e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label>Contact <Required /></label>
+                    <input className="form-control" placeholder="Phone number" value={form.contact} onChange={e => set('contact', e.target.value)} />
+                  </div>
                 </div>
                 <div className="form-group">
-                  <label>Row #</label>
-                  <input className="form-control" placeholder="1" value={form.row_number} onChange={e => set('row_number', e.target.value)} />
+                  <label>Item Description <Required /></label>
+                  <input className="form-control" placeholder="e.g. Apple iPhone 17 Pro Max 256GB" value={form.item_description} onChange={e => set('item_description', e.target.value)} />
+                </div>
+                <div className="grid-3">
+                  <div className="form-group">
+                    <label>Payment Method <Required /></label>
+                    <select className="form-control" value={form.payment_method} onChange={e => set('payment_method', e.target.value)}>
+                      <option value="">Select...</option>
+                      {PAYMENT_METHODS.map(p => <option key={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Sales Person <Required /></label>
+                    <input className="form-control" placeholder="Name" value={form.sales_person} onChange={e => set('sales_person', e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label>Out Status <Required /></label>
+                    {user?.role === 'admin' ? (
+                      <select className="form-control" value={form.out_status} onChange={e => set('out_status', e.target.value)}>
+                        <option value="NO">NO</option>
+                        <option value="YES">YES</option>
+                      </select>
+                    ) : (
+                      <input className="form-control" value="NO" disabled
+                        style={{ background: '#F3F4F6', color: '#9CA3AF', cursor: 'not-allowed' }} />
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="grid-2">
-                <div className="form-group">
-                  <label>Customer Name</label>
-                  <input className="form-control" placeholder="Customer name" value={form.customer_name} onChange={e => set('customer_name', e.target.value)} />
+
+              {/* Optional Fields */}
+              <div style={{ border: '1.5px solid var(--border)', borderRadius: 10, padding: 16, marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Optional Information
+                </div>
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label>Serial Number / IMEI</label>
+                    <input className="form-control" placeholder="Enter as text" value={form.serial_imei} onChange={e => set('serial_imei', e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label>Invoice Value (Rs.)</label>
+                    <input type="number" className="form-control" placeholder="0.00" value={form.invoice_value} onChange={e => set('invoice_value', e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label>ACC INV No.</label>
+                    <input className="form-control" value={form.acc_inv_no} onChange={e => set('acc_inv_no', e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label>INV No.</label>
+                    <input className="form-control" value={form.inv_no} onChange={e => set('inv_no', e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label>Cashier</label>
+                    <input className="form-control" value={form.cashier} onChange={e => set('cashier', e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label>Google Review</label>
+                    <select className="form-control" value={form.google_review} onChange={e => set('google_review', e.target.value)}>
+                      <option value="">Select...</option>
+                      <option value="YES">YES</option>
+                      <option value="NO">NO</option>
+                    </select>
+                  </div>
                 </div>
                 <div className="form-group">
-                  <label>Contact</label>
-                  <input className="form-control" placeholder="Phone number" value={form.contact} onChange={e => set('contact', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>ACC INV No.</label>
-                  <input className="form-control" value={form.acc_inv_no} onChange={e => set('acc_inv_no', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>INV No.</label>
-                  <input className="form-control" value={form.inv_no} onChange={e => set('inv_no', e.target.value)} />
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Item Description</label>
-                <input className="form-control" placeholder="e.g. Apple iPhone 15 Pro 256GB" value={form.item_description} onChange={e => set('item_description', e.target.value)} />
-              </div>
-              <div className="grid-2">
-                <div className="form-group">
-                  <label>Serial Number / IMEI</label>
-                  <input className="form-control" placeholder="Enter as text" value={form.serial_imei} onChange={e => set('serial_imei', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>Supplier Name</label>
-                  <input className="form-control" value={form.supplier_name} onChange={e => set('supplier_name', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>Cost (Rs.)</label>
-                  <input type="number" className="form-control" placeholder="0.00" value={form.cost} onChange={e => set('cost', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>Invoice Value (Rs.)</label>
-                  <input type="number" className="form-control" placeholder="0.00" value={form.invoice_value} onChange={e => set('invoice_value', e.target.value)} />
-                </div>
-              </div>
-              <div className="grid-3">
-                <div className="form-group">
-                  <label>Payment Method</label>
-                  <select className="form-control" value={form.payment_method} onChange={e => set('payment_method', e.target.value)}>
-                    <option value="">Select...</option>
-                    {PAYMENT_METHODS.map(p => <option key={p}>{p}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Sales Person</label>
-                  <input className="form-control" value={form.sales_person} onChange={e => set('sales_person', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>Out Status</label>
-                  <input className="form-control" placeholder="e.g. Delivered" value={form.out_status} onChange={e => set('out_status', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>Cashier</label>
-                  <input className="form-control" value={form.cashier} onChange={e => set('cashier', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>Google Review</label>
-                  <input className="form-control" placeholder="Yes / No" value={form.google_review} onChange={e => set('google_review', e.target.value)} />
+                  <label>Remarks</label>
+                  <textarea className="form-control" rows={2} value={form.remarks} onChange={e => set('remarks', e.target.value)} />
                 </div>
               </div>
-              <div className="form-group">
-                <label>Remarks</label>
-                <textarea className="form-control" rows={2} value={form.remarks} onChange={e => set('remarks', e.target.value)} />
+
+              {/* Supplier Toggle */}
+              <div style={{ border: '1.5px solid #FDE68A', borderRadius: 10, padding: 16, background: '#FFFBEB' }}>
+                <div className="flex items-center gap-2" style={{ marginBottom: showSupplier ? 12 : 0 }}>
+                  <input type="checkbox" id="supplierToggle" checked={showSupplier}
+                    onChange={e => setShowSupplier(e.target.checked)}
+                    style={{ width: 16, height: 16, cursor: 'pointer' }} />
+                  <label htmlFor="supplierToggle" style={{ fontSize: 12, fontWeight: 700, color: '#92400E', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    📦 Outside Purchase? (Add Supplier & Cost)
+                  </label>
+                </div>
+                {showSupplier && (
+                  <div className="grid-2" style={{ marginTop: 12 }}>
+                    <div className="form-group">
+                      <label>Supplier Name</label>
+                      <input className="form-control" placeholder="Supplier name" value={form.supplier_name} onChange={e => set('supplier_name', e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                      <label>Cost (Rs.)</label>
+                      <input type="number" className="form-control" placeholder="0.00" value={form.cost} onChange={e => set('cost', e.target.value)} />
+                    </div>
+                  </div>
+                )}
               </div>
+
             </div>
             <div className="modal-footer">
               <button className="btn btn-ghost" onClick={() => setModal(null)}>Cancel</button>
