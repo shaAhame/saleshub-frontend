@@ -12,6 +12,10 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [branch, setBranch] = useState(user?.role === 'admin' ? '' : user?.branch);
+  const [imeiQuery, setImeiQuery] = useState('');
+  const [imeiResult, setImeiResult] = useState(null);
+  const [imeiSearched, setImeiSearched] = useState(false);
+  const [imeiLoading, setImeiLoading] = useState(false);
 
   const fetchSales = useCallback(async () => {
     setLoading(true);
@@ -26,6 +30,18 @@ export default function Dashboard() {
   }, [date, branch]);
 
   useEffect(() => { fetchSales(); }, [fetchSales]);
+
+  const handleIMEISearch = async () => {
+    if (!imeiQuery.trim()) return;
+    setImeiLoading(true);
+    setImeiSearched(false);
+    setImeiResult(null);
+    try {
+      const { data } = await api.get('/sales', { params: { imei: imeiQuery.trim() } });
+      setImeiResult(data.length > 0 ? data : []);
+    } catch { setImeiResult([]); }
+    finally { setImeiLoading(false); setImeiSearched(true); }
+  };
 
   const handleExport = async (type) => {
     const params = new URLSearchParams();
@@ -46,7 +62,6 @@ export default function Dashboard() {
 
   return (
     <div>
-      {/* Header */}
       <div className="flex items-center gap-3" style={{ marginBottom: 24 }}>
         <div>
           <h2>📊 Sales Dashboard</h2>
@@ -60,12 +75,87 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* IMEI Search */}
+      <div className="card" style={{ marginBottom: 20, border: '1.5px solid #818CF8' }}>
+        <div className="card-body" style={{ padding: '16px 20px' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            🔍 Search by IMEI / Serial Number
+          </div>
+          <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
+            <input className="form-control" style={{ maxWidth: 340, fontFamily: 'monospace' }}
+              placeholder="Enter IMEI or Serial Number..."
+              value={imeiQuery}
+              onChange={e => { setImeiQuery(e.target.value); setImeiSearched(false); setImeiResult(null); }}
+              onKeyDown={e => e.key === 'Enter' && handleIMEISearch()} />
+            <button className="btn btn-primary" onClick={handleIMEISearch} disabled={imeiLoading}>
+              {imeiLoading ? 'Searching...' : '🔍 Search'}
+            </button>
+            {imeiSearched && (
+              <button className="btn btn-ghost" onClick={() => { setImeiQuery(''); setImeiResult(null); setImeiSearched(false); }}>
+                ✕ Clear
+              </button>
+            )}
+          </div>
+
+          {imeiSearched && imeiResult !== null && (
+            <div style={{ marginTop: 14 }}>
+              {imeiResult.length === 0 ? (
+                <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '12px 16px', color: '#DC2626', fontSize: 13 }}>
+                  ❌ No record found for: <strong>{imeiQuery}</strong>
+                </div>
+              ) : (
+                imeiResult.map(r => (
+                  <div key={r.id} style={{ background: '#F0FDF4', border: '1.5px solid #86EFAC', borderRadius: 10, padding: 16, marginTop: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                      <div>
+                        <span className={`badge ${BRANCH_BADGE[r.branch]}`} style={{ marginRight: 8 }}>{r.branch}</span>
+                        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                          {r.sale_date ? format(new Date(r.sale_date), 'dd MMM yyyy') : ''}
+                        </span>
+                      </div>
+                      <span style={{
+                        background: r.out_status === 'YES' ? '#D1FAE5' : '#FEE2E2',
+                        color: r.out_status === 'YES' ? '#065F46' : '#991B1B',
+                        padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 700
+                      }}>Out: {r.out_status || 'NO'}</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
+                      {[
+                        { label: 'Customer Name', value: r.customer_name },
+                        { label: 'Contact', value: r.contact },
+                        { label: 'Item', value: r.item_description },
+                        { label: 'IMEI / Serial', value: r.serial_imei },
+                        { label: 'Invoice Value', value: r.invoice_value ? `Rs. ${Number(r.invoice_value).toLocaleString()}` : '-' },
+                        { label: 'Payment', value: r.payment_method },
+                        { label: 'Sales Person', value: r.sales_person },
+                        { label: 'Cashier', value: r.cashier || '-' },
+                        { label: 'Supplier', value: r.supplier_name || '-' },
+                        { label: 'Cost', value: r.cost ? `Rs. ${Number(r.cost).toLocaleString()}` : '-' },
+                        { label: 'ACC INV No.', value: r.acc_inv_no || '-' },
+                        { label: 'INV No.', value: r.inv_no || '-' },
+                        { label: 'Google Review', value: r.google_review || '-' },
+                        { label: 'Remarks', value: r.remarks || '-' },
+                      ].map(item => (
+                        <div key={item.label} style={{ background: 'white', borderRadius: 8, padding: '8px 12px', border: '1px solid #D1FAE5' }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>{item.label}</div>
+                          <div style={{ fontSize: 13, fontWeight: 500, marginTop: 2 }}>{item.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="card" style={{ marginBottom: 20 }}>
         <div className="card-body" style={{ padding: '14px 20px' }}>
           <div className="flex gap-3 items-center" style={{ flexWrap: 'wrap' }}>
             <div className="flex items-center gap-2">
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>DATE</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>DATE</label>
               <input type="date" className="form-control" style={{ width: 160 }}
                 value={date} onChange={e => setDate(e.target.value)} />
             </div>
@@ -79,7 +169,7 @@ export default function Dashboard() {
                 </select>
               </div>
             )}
-            <button className="btn btn-primary btn-sm" onClick={fetchSales}>🔍 Search</button>
+            <button className="btn btn-primary btn-sm" onClick={fetchSales}>🔍 Filter</button>
             <button className="btn btn-ghost btn-sm" onClick={() => { setDate(''); setBranch(user?.role === 'admin' ? '' : user?.branch); }}>✕ Clear</button>
           </div>
         </div>
@@ -116,49 +206,47 @@ export default function Dashboard() {
           ) : sales.length === 0 ? (
             <div className="empty-state">
               <div style={{ fontSize: 40 }}>📭</div>
-              <p>No sales records found for the selected filters.</p>
+              <p>No sales records found.</p>
             </div>
           ) : (
             <table>
               <thead>
                 <tr>
-                  <th>#</th>
+                  <th>No</th>
                   <th>Branch</th>
                   <th>Date</th>
                   <th>Customer</th>
                   <th>Contact</th>
                   <th>Item</th>
                   <th>Serial/IMEI</th>
-                  <th>Supplier</th>
-                  <th>Cost</th>
                   <th>Inv. Value</th>
                   <th>Payment</th>
                   <th>Salesperson</th>
-                  <th>Out Status</th>
+                  <th>Out</th>
                   <th>Cashier</th>
-                  <th>Remarks</th>
                 </tr>
               </thead>
               <tbody>
                 {sales.map((s, i) => (
                   <tr key={s.id}>
-                    <td style={{ color: 'var(--text-muted)' }}>{s.row_number || i + 1}</td>
+                    <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
                     <td><span className={`badge ${BRANCH_BADGE[s.branch]}`}>{s.branch}</span></td>
                     <td style={{ whiteSpace: 'nowrap' }}>{s.sale_date ? format(new Date(s.sale_date), 'dd/MM/yyyy') : ''}</td>
                     <td style={{ fontWeight: 500 }}>{s.customer_name}</td>
                     <td>{s.contact}</td>
                     <td>{s.item_description}</td>
                     <td style={{ fontFamily: 'monospace', fontSize: 11 }}>{s.serial_imei}</td>
-                    <td>{s.supplier_name}</td>
-                    <td>{s.cost ? `Rs. ${Number(s.cost).toLocaleString()}` : ''}</td>
-                    <td style={{ fontWeight: 600, color: 'var(--accent)' }}>
-                      {s.invoice_value ? `Rs. ${Number(s.invoice_value).toLocaleString()}` : ''}
-                    </td>
+                    <td style={{ fontWeight: 600, color: 'var(--accent)' }}>{s.invoice_value ? `Rs. ${Number(s.invoice_value).toLocaleString()}` : ''}</td>
                     <td><span style={{ fontSize: 11, background: '#F3F4F6', padding: '2px 7px', borderRadius: 12 }}>{s.payment_method}</span></td>
                     <td>{s.sales_person}</td>
-                    <td>{s.out_status}</td>
+                    <td>
+                      <span style={{
+                        background: s.out_status === 'YES' ? '#D1FAE5' : '#FEE2E2',
+                        color: s.out_status === 'YES' ? '#065F46' : '#991B1B',
+                        padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700
+                      }}>{s.out_status || 'NO'}</span>
+                    </td>
                     <td>{s.cashier}</td>
-                    <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{s.remarks}</td>
                   </tr>
                 ))}
               </tbody>
