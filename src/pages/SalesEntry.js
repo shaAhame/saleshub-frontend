@@ -197,21 +197,12 @@ export default function SalesEntry() {
                 {user?.role === 'admin' && (
                   <div className="form-group">
                     <label>Branch</label>
-                    <select className="form-control" value={form.branch} onChange={e => set('branch', e.target.value)}>
+                    <select className="form-control" value={form.branch}
+                      onChange={e => set('branch', e.target.value)}>
                       {BRANCHES.map(b => <option key={b}>{b}</option>)}
                     </select>
                   </div>
                 )}
-              </div>
-
-              {/* IMEI — Only Required Field */}
-              <div style={{ background: '#F8F7FF', border: '1.5px solid #E0E7FF', borderRadius: 10, padding: 14, marginBottom: 14 }}>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label>Serial Number / IMEI <Required /></label>
-                  <input className="form-control" placeholder="e.g. 350922948431888"
-                    value={form.serial_imei} onChange={e => set('serial_imei', e.target.value)}
-                    style={{ fontFamily: 'monospace' }} />
-                </div>
               </div>
 
               {/* Customer Info */}
@@ -228,16 +219,39 @@ export default function SalesEntry() {
                 </div>
               </div>
 
+              {/* Item Description */}
               <div className="form-group">
                 <label>Item Description</label>
                 <input className="form-control" placeholder="e.g. Apple iPhone 17 Pro Max 256GB"
                   value={form.item_description} onChange={e => set('item_description', e.target.value)} />
               </div>
 
+              {/* IMEI — Required — below Item Description */}
+              <div style={{ background: '#F8F7FF', border: '1.5px solid #E0E7FF', borderRadius: 10, padding: 14, marginBottom: 14 }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Serial Number / IMEI <Required /></label>
+                  <input className="form-control" placeholder="e.g. 350922948431888"
+                    value={form.serial_imei} onChange={e => set('serial_imei', e.target.value)}
+                    style={{ fontFamily: 'monospace' }} />
+                </div>
+              </div>
+
+              {/* Invoice Value first, ACC INV No second */}
               <div className="grid-2">
                 <div className="form-group">
+                  <label>Invoice Value (Rs.)</label>
+                  <input type="number" className="form-control" placeholder="0.00"
+                    value={form.invoice_value} onChange={e => set('invoice_value', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label>ACC INV No.</label>
+                  <input className="form-control" value={form.acc_inv_no}
+                    onChange={e => set('acc_inv_no', e.target.value)} />
+                </div>
+                <div className="form-group">
                   <label>Payment Method</label>
-                  <select className="form-control" value={form.payment_method} onChange={e => set('payment_method', e.target.value)}>
+                  <select className="form-control" value={form.payment_method}
+                    onChange={e => set('payment_method', e.target.value)}>
                     <option value="">Select...</option>
                     {PAYMENT_METHODS.map(p => <option key={p}>{p}</option>)}
                   </select>
@@ -248,14 +262,10 @@ export default function SalesEntry() {
                     value={form.sales_person} onChange={e => set('sales_person', e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label>Invoice Value (Rs.)</label>
-                  <input type="number" className="form-control" placeholder="0.00"
-                    value={form.invoice_value} onChange={e => set('invoice_value', e.target.value)} />
-                </div>
-                <div className="form-group">
                   <label>Out Status</label>
                   {user?.role === 'admin' ? (
-                    <select className="form-control" value={form.out_status} onChange={e => set('out_status', e.target.value)}>
+                    <select className="form-control" value={form.out_status}
+                      onChange={e => set('out_status', e.target.value)}>
                       <option value="NO">NO</option>
                       <option value="YES">YES</option>
                     </select>
@@ -271,16 +281,12 @@ export default function SalesEntry() {
                 </div>
                 <div className="form-group">
                   <label>Google Review</label>
-                  <select className="form-control" value={form.google_review} onChange={e => set('google_review', e.target.value)}>
+                  <select className="form-control" value={form.google_review}
+                    onChange={e => set('google_review', e.target.value)}>
                     <option value="">Select...</option>
                     <option value="YES">YES</option>
                     <option value="NO">NO</option>
                   </select>
-                </div>
-                <div className="form-group">
-                  <label>ACC INV No.</label>
-                  <input className="form-control" value={form.acc_inv_no}
-                    onChange={e => set('acc_inv_no', e.target.value)} />
                 </div>
                 <div className="form-group">
                   <label>INV No.</label>
