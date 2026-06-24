@@ -54,12 +54,7 @@ export default function SalesEntry() {
   };
 
   const handleSave = async () => {
-    if (!form.customer_name) return alert('Customer Name is required');
-    if (!form.contact) return alert('Contact is required');
-    if (!form.item_description) return alert('Item Description is required');
     if (!form.serial_imei) return alert('Serial Number / IMEI is required');
-    if (!form.payment_method) return alert('Payment Method is required');
-    if (!form.sales_person) return alert('Sales Person is required');
     setSaving(true);
     try {
       if (editId) {
@@ -89,27 +84,27 @@ export default function SalesEntry() {
 
   return (
     <div>
-      <div className="flex items-center gap-3" style={{ marginBottom: 24 }}>
+      <div className="flex items-center gap-3" style={{ marginBottom: 20 }}>
         <div>
           <h2>📝 Sales Entry</h2>
-          <p className="text-muted text-sm" style={{ marginTop: 2 }}>Add and manage daily sales records</p>
+          <p className="text-muted text-sm" style={{ marginTop: 2 }}>Daily sales records</p>
         </div>
-        <button className="btn btn-primary ml-auto" onClick={openAdd}>+ Add Sale</button>
+        <button className="btn btn-primary ml-auto" onClick={openAdd} style={{ whiteSpace: 'nowrap' }}>+ Add Sale</button>
       </div>
 
       {/* Filters */}
-      <div className="card" style={{ marginBottom: 20 }}>
-        <div className="card-body" style={{ padding: '14px 20px' }}>
-          <div className="flex gap-3 items-center" style={{ flexWrap: 'wrap' }}>
-            <div className="flex items-center gap-2">
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>DATE</label>
-              <input type="date" className="form-control" style={{ width: 160 }}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-body" style={{ padding: '12px 16px' }}>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>DATE</label>
+              <input type="date" className="form-control" style={{ width: 150 }}
                 value={date} onChange={e => setDate(e.target.value)} />
             </div>
             {user?.role === 'admin' && (
-              <div className="flex items-center gap-2">
-                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>BRANCH</label>
-                <select className="form-control" style={{ width: 140 }}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>BRANCH</label>
+                <select className="form-control" style={{ width: 130 }}
                   value={branch} onChange={e => setBranch(e.target.value)}>
                   {BRANCHES.map(b => <option key={b}>{b}</option>)}
                 </select>
@@ -124,15 +119,15 @@ export default function SalesEntry() {
         <div className="card-header">
           <h3>
             <span className={`badge ${BRANCH_BADGE[branch]}`} style={{ marginRight: 8 }}>{branch}</span>
-            {date ? format(new Date(date + 'T00:00:00'), 'MMMM d, yyyy') : 'All Dates'}
+            {date ? format(new Date(date + 'T00:00:00'), 'MMM d, yyyy') : 'All Dates'}
           </h3>
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{sales.length} entries</span>
         </div>
         <div className="table-wrap">
           {sales.length === 0 ? (
             <div className="empty-state">
-              <div style={{ fontSize: 40 }}>📋</div>
-              <p>No entries yet. Click "+ Add Sale" to get started.</p>
+              <div style={{ fontSize: 36 }}>📋</div>
+              <p>No entries yet. Tap "+ Add Sale"</p>
             </div>
           ) : (
             <table>
@@ -142,8 +137,8 @@ export default function SalesEntry() {
                   <th>Customer</th>
                   <th>Contact</th>
                   <th>Item</th>
-                  <th>Serial/IMEI</th>
-                  <th>Inv. Value</th>
+                  <th>IMEI</th>
+                  <th>Value</th>
                   <th>Payment</th>
                   <th>Salesperson</th>
                   <th>Out</th>
@@ -170,7 +165,7 @@ export default function SalesEntry() {
                     </td>
                     <td>
                       <div className="flex gap-2">
-                        <button className="btn btn-outline btn-sm" onClick={() => openEdit(s)}>✏️ Edit</button>
+                        <button className="btn btn-outline btn-sm" onClick={() => openEdit(s)}>✏️</button>
                         <button className="btn btn-danger btn-sm" onClick={() => setDeleteConfirm(s.id)}>🗑</button>
                       </div>
                     </td>
@@ -182,7 +177,7 @@ export default function SalesEntry() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Add/Edit Modal */}
       {modal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setModal(null)}>
           <div className="modal">
@@ -196,7 +191,8 @@ export default function SalesEntry() {
               <div className="grid-2">
                 <div className="form-group">
                   <label>Date</label>
-                  <input type="date" className="form-control" value={form.sale_date} onChange={e => set('sale_date', e.target.value)} />
+                  <input type="date" className="form-control" value={form.sale_date}
+                    onChange={e => set('sale_date', e.target.value)} />
                 </div>
                 {user?.role === 'admin' && (
                   <div className="form-group">
@@ -208,111 +204,105 @@ export default function SalesEntry() {
                 )}
               </div>
 
-              {/* Required Fields */}
-              <div style={{ background: '#F8F7FF', border: '1.5px solid #E0E7FF', borderRadius: 10, padding: 16, marginBottom: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--primary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  ✳️ Required Information
-                </div>
-                <div className="grid-2">
-                  <div className="form-group">
-                    <label>Customer Name <Required /></label>
-                    <input className="form-control" placeholder="Full name"
-                      value={form.customer_name} onChange={e => set('customer_name', e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                    <label>Contact <Required /></label>
-                    <input className="form-control" placeholder="Phone number"
-                      value={form.contact} onChange={e => set('contact', e.target.value)} />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>Item Description <Required /></label>
-                  <input className="form-control" placeholder="e.g. Apple iPhone 17 Pro Max 256GB"
-                    value={form.item_description} onChange={e => set('item_description', e.target.value)} />
-                </div>
-                <div className="form-group">
+              {/* IMEI — Only Required Field */}
+              <div style={{ background: '#F8F7FF', border: '1.5px solid #E0E7FF', borderRadius: 10, padding: 14, marginBottom: 14 }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label>Serial Number / IMEI <Required /></label>
-                  <input className="form-control" placeholder="Enter as text — e.g. 350922948431888"
-                    value={form.serial_imei} onChange={e => set('serial_imei', e.target.value)} />
-                </div>
-                <div className="grid-3">
-                  <div className="form-group">
-                    <label>Payment Method <Required /></label>
-                    <select className="form-control" value={form.payment_method} onChange={e => set('payment_method', e.target.value)}>
-                      <option value="">Select...</option>
-                      {PAYMENT_METHODS.map(p => <option key={p}>{p}</option>)}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Sales Person <Required /></label>
-                    <input className="form-control" placeholder="Name"
-                      value={form.sales_person} onChange={e => set('sales_person', e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                    <label>Out Status <Required /></label>
-                    {user?.role === 'admin' ? (
-                      <select className="form-control" value={form.out_status} onChange={e => set('out_status', e.target.value)}>
-                        <option value="NO">NO</option>
-                        <option value="YES">YES</option>
-                      </select>
-                    ) : (
-                      <input className="form-control" value="NO" disabled
-                        style={{ background: '#F3F4F6', color: '#9CA3AF', cursor: 'not-allowed' }} />
-                    )}
-                  </div>
+                  <input className="form-control" placeholder="e.g. 350922948431888"
+                    value={form.serial_imei} onChange={e => set('serial_imei', e.target.value)}
+                    style={{ fontFamily: 'monospace' }} />
                 </div>
               </div>
 
-              {/* Optional Fields */}
-              <div style={{ border: '1.5px solid var(--border)', borderRadius: 10, padding: 16, marginBottom: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Optional Information
-                </div>
-                <div className="grid-2">
-                  <div className="form-group">
-                    <label>Invoice Value (Rs.)</label>
-                    <input type="number" className="form-control" placeholder="0.00"
-                      value={form.invoice_value} onChange={e => set('invoice_value', e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                    <label>ACC INV No.</label>
-                    <input className="form-control"
-                      value={form.acc_inv_no} onChange={e => set('acc_inv_no', e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                    <label>INV No.</label>
-                    <input className="form-control"
-                      value={form.inv_no} onChange={e => set('inv_no', e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                    <label>Cashier</label>
-                    <input className="form-control"
-                      value={form.cashier} onChange={e => set('cashier', e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                    <label>Google Review</label>
-                    <select className="form-control" value={form.google_review} onChange={e => set('google_review', e.target.value)}>
-                      <option value="">Select...</option>
-                      <option value="YES">YES</option>
-                      <option value="NO">NO</option>
-                    </select>
-                  </div>
+              {/* Customer Info */}
+              <div className="grid-2">
+                <div className="form-group">
+                  <label>Customer Name</label>
+                  <input className="form-control" placeholder="Full name"
+                    value={form.customer_name} onChange={e => set('customer_name', e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label>Remarks</label>
-                  <textarea className="form-control" rows={2}
-                    value={form.remarks} onChange={e => set('remarks', e.target.value)} />
+                  <label>Contact</label>
+                  <input className="form-control" placeholder="Phone number"
+                    value={form.contact} onChange={e => set('contact', e.target.value)} />
                 </div>
+              </div>
+
+              <div className="form-group">
+                <label>Item Description</label>
+                <input className="form-control" placeholder="e.g. Apple iPhone 17 Pro Max 256GB"
+                  value={form.item_description} onChange={e => set('item_description', e.target.value)} />
+              </div>
+
+              <div className="grid-2">
+                <div className="form-group">
+                  <label>Payment Method</label>
+                  <select className="form-control" value={form.payment_method} onChange={e => set('payment_method', e.target.value)}>
+                    <option value="">Select...</option>
+                    {PAYMENT_METHODS.map(p => <option key={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Sales Person</label>
+                  <input className="form-control" placeholder="Name"
+                    value={form.sales_person} onChange={e => set('sales_person', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label>Invoice Value (Rs.)</label>
+                  <input type="number" className="form-control" placeholder="0.00"
+                    value={form.invoice_value} onChange={e => set('invoice_value', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label>Out Status</label>
+                  {user?.role === 'admin' ? (
+                    <select className="form-control" value={form.out_status} onChange={e => set('out_status', e.target.value)}>
+                      <option value="NO">NO</option>
+                      <option value="YES">YES</option>
+                    </select>
+                  ) : (
+                    <input className="form-control" value="NO" disabled
+                      style={{ background: '#F3F4F6', color: '#9CA3AF', cursor: 'not-allowed' }} />
+                  )}
+                </div>
+                <div className="form-group">
+                  <label>Cashier</label>
+                  <input className="form-control" value={form.cashier}
+                    onChange={e => set('cashier', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label>Google Review</label>
+                  <select className="form-control" value={form.google_review} onChange={e => set('google_review', e.target.value)}>
+                    <option value="">Select...</option>
+                    <option value="YES">YES</option>
+                    <option value="NO">NO</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>ACC INV No.</label>
+                  <input className="form-control" value={form.acc_inv_no}
+                    onChange={e => set('acc_inv_no', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label>INV No.</label>
+                  <input className="form-control" value={form.inv_no}
+                    onChange={e => set('inv_no', e.target.value)} />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Remarks</label>
+                <textarea className="form-control" rows={2} value={form.remarks}
+                  onChange={e => set('remarks', e.target.value)} />
               </div>
 
               {/* Outside Purchase Toggle */}
-              <div style={{ border: '1.5px solid #FDE68A', borderRadius: 10, padding: 16, background: '#FFFBEB' }}>
+              <div style={{ border: '1.5px solid #FDE68A', borderRadius: 10, padding: 14, background: '#FFFBEB' }}>
                 <div className="flex items-center gap-2" style={{ marginBottom: showSupplier ? 12 : 0 }}>
                   <input type="checkbox" id="supplierToggle" checked={showSupplier}
                     onChange={e => setShowSupplier(e.target.checked)}
-                    style={{ width: 16, height: 16, cursor: 'pointer' }} />
+                    style={{ width: 18, height: 18, cursor: 'pointer' }} />
                   <label htmlFor="supplierToggle" style={{ fontSize: 12, fontWeight: 700, color: '#92400E', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    📦 Outside Purchase? (Add Supplier & Cost)
+                    📦 Outside Purchase? (Supplier & Cost)
                   </label>
                 </div>
                 {showSupplier && (
@@ -334,8 +324,8 @@ export default function SalesEntry() {
             </div>
             <div className="modal-footer">
               <button className="btn btn-ghost" onClick={() => setModal(null)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? 'Saving...' : modal === 'add' ? '✅ Add Sale' : '💾 Save Changes'}
+              <button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>
+                {saving ? 'Saving...' : modal === 'add' ? '✅ Add Sale' : '💾 Save'}
               </button>
             </div>
           </div>
@@ -345,14 +335,14 @@ export default function SalesEntry() {
       {/* Delete Confirm */}
       {deleteConfirm && (
         <div className="modal-overlay">
-          <div className="modal" style={{ maxWidth: 380 }}>
+          <div className="modal" style={{ maxWidth: 400 }}>
             <div className="modal-header"><h3>🗑 Confirm Delete</h3></div>
             <div className="modal-body">
-              <p>Are you sure you want to delete this sale record? This cannot be undone.</p>
+              <p>Are you sure you want to delete this record? This cannot be undone.</p>
             </div>
             <div className="modal-footer">
               <button className="btn btn-ghost" onClick={() => setDeleteConfirm(null)}>Cancel</button>
-              <button className="btn btn-danger" onClick={() => handleDelete(deleteConfirm)}>Delete</button>
+              <button className="btn btn-danger" style={{ flex: 1 }} onClick={() => handleDelete(deleteConfirm)}>Delete</button>
             </div>
           </div>
         </div>
