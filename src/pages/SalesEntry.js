@@ -187,7 +187,7 @@ export default function SalesEntry() {
             </div>
             <div className="modal-body">
 
-              {/* Date + Branch */}
+              {/* 1. Date + Branch */}
               <div className="grid-2">
                 <div className="form-group">
                   <label>Date</label>
@@ -205,7 +205,21 @@ export default function SalesEntry() {
                 )}
               </div>
 
-              {/* Customer Info */}
+              {/* 2. Invoice Value + ACC INV No — above customer */}
+              <div className="grid-2">
+                <div className="form-group">
+                  <label>Invoice Value (Rs.)</label>
+                  <input type="number" className="form-control" placeholder="0.00"
+                    value={form.invoice_value} onChange={e => set('invoice_value', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label>ACC INV No.</label>
+                  <input className="form-control" value={form.acc_inv_no}
+                    onChange={e => set('acc_inv_no', e.target.value)} />
+                </div>
+              </div>
+
+              {/* 3. Customer Name + Contact */}
               <div className="grid-2">
                 <div className="form-group">
                   <label>Customer Name</label>
@@ -219,14 +233,14 @@ export default function SalesEntry() {
                 </div>
               </div>
 
-              {/* Item Description */}
+              {/* 4. Item Description */}
               <div className="form-group">
                 <label>Item Description</label>
                 <input className="form-control" placeholder="e.g. Apple iPhone 17 Pro Max 256GB"
                   value={form.item_description} onChange={e => set('item_description', e.target.value)} />
               </div>
 
-              {/* IMEI — Required — below Item Description */}
+              {/* 5. IMEI — Required — below Item Description */}
               <div style={{ background: '#F8F7FF', border: '1.5px solid #E0E7FF', borderRadius: 10, padding: 14, marginBottom: 14 }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label>Serial Number / IMEI <Required /></label>
@@ -236,18 +250,8 @@ export default function SalesEntry() {
                 </div>
               </div>
 
-              {/* Invoice Value first, ACC INV No second */}
+              {/* 6. Rest of fields */}
               <div className="grid-2">
-                <div className="form-group">
-                  <label>Invoice Value (Rs.)</label>
-                  <input type="number" className="form-control" placeholder="0.00"
-                    value={form.invoice_value} onChange={e => set('invoice_value', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>ACC INV No.</label>
-                  <input className="form-control" value={form.acc_inv_no}
-                    onChange={e => set('acc_inv_no', e.target.value)} />
-                </div>
                 <div className="form-group">
                   <label>Payment Method</label>
                   <select className="form-control" value={form.payment_method}
@@ -301,7 +305,7 @@ export default function SalesEntry() {
                   onChange={e => set('remarks', e.target.value)} />
               </div>
 
-              {/* Outside Purchase Toggle */}
+              {/* 7. Outside Purchase Toggle */}
               <div style={{ border: '1.5px solid #FDE68A', borderRadius: 10, padding: 14, background: '#FFFBEB' }}>
                 <div className="flex items-center gap-2" style={{ marginBottom: showSupplier ? 12 : 0 }}>
                   <input type="checkbox" id="supplierToggle" checked={showSupplier}
