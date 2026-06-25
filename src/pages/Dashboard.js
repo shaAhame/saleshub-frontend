@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [imeiResult, setImeiResult] = useState(null);
   const [imeiSearched, setImeiSearched] = useState(false);
   const [imeiLoading, setImeiLoading] = useState(false);
+  const [expandedRow, setExpandedRow] = useState(null);
 
   const fetchSales = useCallback(async () => {
     setLoading(true);
@@ -217,8 +218,7 @@ export default function Dashboard() {
                   <th>Date</th>
                   <th>Customer</th>
                   <th>Contact</th>
-                  <th>Item</th>
-                  <th>Serial/IMEI</th>
+                  <th>Items</th>
                   <th>Inv. Value</th>
                   <th>Payment</th>
                   <th>Salesperson</th>
@@ -228,26 +228,62 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {sales.map((s, i) => (
-                  <tr key={s.id}>
-                    <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
-                    <td><span className={`badge ${BRANCH_BADGE[s.branch]}`}>{s.branch}</span></td>
-                    <td style={{ whiteSpace: 'nowrap' }}>{s.sale_date ? format(new Date(s.sale_date), 'dd/MM/yyyy') : ''}</td>
-                    <td style={{ fontWeight: 500 }}>{s.customer_name}</td>
-                    <td>{s.contact}</td>
-                    <td>{s.item_description}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: 11 }}>{s.serial_imei}</td>
-                    <td style={{ fontWeight: 600, color: 'var(--accent)' }}>{s.invoice_value ? `Rs. ${Number(s.invoice_value).toLocaleString()}` : ''}</td>
-                    <td><span style={{ fontSize: 11, background: '#F3F4F6', padding: '2px 7px', borderRadius: 12 }}>{s.payment_method}</span></td>
-                    <td>{s.sales_person}</td>
-                    <td>
-                      <span style={{
-                        background: s.out_status === 'YES' ? '#D1FAE5' : '#FEE2E2',
-                        color: s.out_status === 'YES' ? '#065F46' : '#991B1B',
-                        padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700
-                      }}>{s.out_status || 'NO'}</span>
-                    </td>
-                    <td>{s.cashier}</td>
-                  </tr>
+                  <React.Fragment key={s.id}>
+                    <tr>
+                      <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
+                      <td><span className={`badge ${BRANCH_BADGE[s.branch]}`}>{s.branch}</span></td>
+                      <td style={{ whiteSpace: 'nowrap' }}>{s.sale_date ? format(new Date(s.sale_date), 'dd/MM/yyyy') : ''}</td>
+                      <td style={{ fontWeight: 500 }}>{s.customer_name}</td>
+                      <td>{s.contact}</td>
+                      <td>
+                        <button onClick={() => setExpandedRow(expandedRow === s.id ? null : s.id)}
+                          style={{ background: 'var(--primary-light)', border: 'none', color: 'var(--primary)', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                          {s.items?.length || 0} item{s.items?.length !== 1 ? 's' : ''} {expandedRow === s.id ? '▲' : '▼'}
+                        </button>
+                      </td>
+                      <td style={{ fontWeight: 600, color: 'var(--accent)' }}>{s.invoice_value ? `Rs. ${Number(s.invoice_value).toLocaleString()}` : ''}</td>
+                      <td><span style={{ fontSize: 11, background: '#F3F4F6', padding: '2px 7px', borderRadius: 12 }}>{s.payment_method}</span></td>
+                      <td>{s.sales_person}</td>
+                      <td>
+                        <span style={{
+                          background: s.out_status === 'YES' ? '#D1FAE5' : '#FEE2E2',
+                          color: s.out_status === 'YES' ? '#065F46' : '#991B1B',
+                          padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700
+                        }}>{s.out_status || 'NO'}</span>
+                      </td>
+                      <td>{s.cashier}</td>
+                    </tr>
+
+                    {/* Expanded Items */}
+                    {expandedRow === s.id && (
+                      <tr>
+                        <td colSpan={11} style={{ background: '#F8F7FF', padding: '8px 16px' }}>
+                          {s.items && s.items.length > 0 ? (
+                            <table style={{ width: '100%', minWidth: 'unset' }}>
+                              <thead>
+                                <tr>
+                                  <th style={{ fontSize: 10 }}>#</th>
+                                  <th style={{ fontSize: 10 }}>Item Description</th>
+                                  <th style={{ fontSize: 10 }}>Serial / IMEI</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {s.items.map((item, idx) => (
+                                  <tr key={item.id}>
+                                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{idx + 1}</td>
+                                    <td style={{ fontSize: 12 }}>{item.item_description}</td>
+                                    <td style={{ fontSize: 12, fontFamily: 'monospace' }}>{item.serial_imei}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          ) : (
+                            <p style={{ fontSize: 12, color: 'var(--text-muted)', padding: '4px 0' }}>No items recorded</p>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
