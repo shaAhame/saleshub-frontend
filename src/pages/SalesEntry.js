@@ -7,12 +7,14 @@ const BRANCHES = ['Prime', 'Liberty', 'Marino'];
 const PAYMENT_METHODS = ['Full Cash', 'Full Bank Transfer', 'Full Card', 'Partial Payment'];
 const BRANCH_BADGE = { Prime: 'badge-prime', Liberty: 'badge-liberty', Marino: 'badge-marino' };
 
+const emptyItem = () => ({ item_description: '', serial_imei: '' });
+
 const empty = (branch, date) => ({
   branch: branch || '', sale_date: date || format(new Date(), 'yyyy-MM-dd'),
-  customer_name: '', contact: '', item_description: '', serial_imei: '',
-  acc_inv_no: '', inv_no: '', supplier_name: '', cost: '',
-  invoice_value: '', payment_method: '', sales_person: '', out_status: 'NO',
-  remarks: '', cashier: '', google_review: ''
+  inv_no: '', acc_inv_no: '', customer_name: '', contact: '',
+  payment_method: '', sales_person: '', out_status: 'NO', cashier: '',
+  invoice_value: '', google_review: '', remarks: '', supplier_name: '', cost: '',
+  items: [emptyItem()]
 });
 
 export default function SalesEntry() {
@@ -26,6 +28,7 @@ export default function SalesEntry() {
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [showSupplier, setShowSupplier] = useState(false);
+  const [expandedRow, setExpandedRow] = useState(null);
 
   const fetchSales = useCallback(async () => {
     const params = { date, branch };
@@ -46,7 +49,9 @@ export default function SalesEntry() {
     setForm({
       ...sale,
       sale_date: sale.sale_date ? format(new Date(sale.sale_date), 'yyyy-MM-dd') : date,
-      cost: sale.cost || '', invoice_value: sale.invoice_value || ''
+      cost: sale.cost || '',
+      invoice_value: sale.invoice_value || '',
+      items: sale.items && sale.items.length > 0 ? sale.items : [emptyItem()]
     });
     setShowSupplier(!!(sale.supplier_name || sale.cost));
     setEditId(sale.id);
@@ -54,7 +59,6 @@ export default function SalesEntry() {
   };
 
   const handleSave = async () => {
-    if (!form.serial_imei) return alert('Serial Number / IMEI is required');
     setSaving(true);
     try {
       if (editId) {
@@ -80,7 +84,23 @@ export default function SalesEntry() {
   };
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const Required = () => <span style={{ color: 'var(--danger)', marginLeft: 2 }}>*</span>;
+
+  const setItem = (index, key, value) => {
+    setForm(f => {
+      const items = [...f.items];
+      items[index] = { ...items[index], [key]: value };
+      return { ...f, items };
+    });
+  };
+
+  const addItem = () => setForm(f => ({ ...f, items: [...f.items, emptyItem()] }));
+
+  const removeItem = (index) => {
+    setForm(f => ({
+      ...f,
+      items: f.items.length > 1 ? f.items.filter((_, i) => i !== index) : f.items
+    }));
+  };
 
   return (
     <div>
@@ -136,8 +156,7 @@ export default function SalesEntry() {
                   <th>No</th>
                   <th>Customer</th>
                   <th>Contact</th>
-                  <th>Item</th>
-                  <th>IMEI</th>
+                  <th>Items</th>
                   <th>Value</th>
                   <th>Payment</th>
                   <th>Salesperson</th>
@@ -147,29 +166,60 @@ export default function SalesEntry() {
               </thead>
               <tbody>
                 {sales.map((s, i) => (
-                  <tr key={s.id}>
-                    <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
-                    <td style={{ fontWeight: 500 }}>{s.customer_name}</td>
-                    <td>{s.contact}</td>
-                    <td>{s.item_description}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: 11 }}>{s.serial_imei}</td>
-                    <td style={{ fontWeight: 600 }}>{s.invoice_value ? `Rs. ${Number(s.invoice_value).toLocaleString()}` : ''}</td>
-                    <td>{s.payment_method}</td>
-                    <td>{s.sales_person}</td>
-                    <td>
-                      <span style={{
-                        background: s.out_status === 'YES' ? '#D1FAE5' : '#FEE2E2',
-                        color: s.out_status === 'YES' ? '#065F46' : '#991B1B',
-                        padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700
-                      }}>{s.out_status || 'NO'}</span>
-                    </td>
-                    <td>
-                      <div className="flex gap-2">
-                        <button className="btn btn-outline btn-sm" onClick={() => openEdit(s)}>✏️</button>
-                        <button className="btn btn-danger btn-sm" onClick={() => setDeleteConfirm(s.id)}>🗑</button>
-                      </div>
-                    </td>
-                  </tr>
+                  <React.Fragment key={s.id}>
+                    <tr>
+                      <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
+                      <td style={{ fontWeight: 500 }}>{s.customer_name}</td>
+                      <td>{s.contact}</td>
+                      <td>
+                        <button onClick={() => setExpandedRow(expandedRow === s.id ? null : s.id)}
+                          style={{ background: 'var(--primary-light)', border: 'none', color: 'var(--primary)', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                          {s.items?.length || 0} item{s.items?.length !== 1 ? 's' : ''} {expandedRow === s.id ? '▲' : '▼'}
+                        </button>
+                      </td>
+                      <td style={{ fontWeight: 600 }}>{s.invoice_value ? `Rs. ${Number(s.invoice_value).toLocaleString()}` : ''}</td>
+                      <td>{s.payment_method}</td>
+                      <td>{s.sales_person}</td>
+                      <td>
+                        <span style={{
+                          background: s.out_status === 'YES' ? '#D1FAE5' : '#FEE2E2',
+                          color: s.out_status === 'YES' ? '#065F46' : '#991B1B',
+                          padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700
+                        }}>{s.out_status || 'NO'}</span>
+                      </td>
+                      <td>
+                        <div className="flex gap-2">
+                          <button className="btn btn-outline btn-sm" onClick={() => openEdit(s)}>✏️</button>
+                          <button className="btn btn-danger btn-sm" onClick={() => setDeleteConfirm(s.id)}>🗑</button>
+                        </div>
+                      </td>
+                    </tr>
+                    {/* Expanded Items Row */}
+                    {expandedRow === s.id && s.items && s.items.length > 0 && (
+                      <tr>
+                        <td colSpan={9} style={{ background: '#F8F7FF', padding: '8px 16px' }}>
+                          <table style={{ width: '100%', minWidth: 'unset' }}>
+                            <thead>
+                              <tr>
+                                <th style={{ fontSize: 10 }}>#</th>
+                                <th style={{ fontSize: 10 }}>Item Description</th>
+                                <th style={{ fontSize: 10 }}>Serial / IMEI</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {s.items.map((item, idx) => (
+                                <tr key={item.id}>
+                                  <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{idx + 1}</td>
+                                  <td style={{ fontSize: 12 }}>{item.item_description}</td>
+                                  <td style={{ fontSize: 12, fontFamily: 'monospace' }}>{item.serial_imei}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
@@ -197,15 +247,14 @@ export default function SalesEntry() {
                 {user?.role === 'admin' && (
                   <div className="form-group">
                     <label>Branch</label>
-                    <select className="form-control" value={form.branch}
-                      onChange={e => set('branch', e.target.value)}>
+                    <select className="form-control" value={form.branch} onChange={e => set('branch', e.target.value)}>
                       {BRANCHES.map(b => <option key={b}>{b}</option>)}
                     </select>
                   </div>
                 )}
               </div>
 
-              {/* 2. INV No. + ACC INV No. — top */}
+              {/* 2. INV No. + ACC INV No. */}
               <div className="grid-2">
                 <div className="form-group">
                   <label>INV No.</label>
@@ -219,7 +268,7 @@ export default function SalesEntry() {
                 </div>
               </div>
 
-              {/* 3. Customer Name + Contact */}
+              {/* 3. Customer + Contact */}
               <div className="grid-2">
                 <div className="form-group">
                   <label>Customer Name</label>
@@ -233,24 +282,43 @@ export default function SalesEntry() {
                 </div>
               </div>
 
-              {/* 4. Item Description */}
-              <div className="form-group">
-                <label>Item Description</label>
-                <input className="form-control" placeholder="e.g. Apple iPhone 17 Pro Max 256GB"
-                  value={form.item_description} onChange={e => set('item_description', e.target.value)} />
-              </div>
-
-              {/* 5. IMEI — Only Required Field */}
-              <div style={{ background: '#F8F7FF', border: '1.5px solid #E0E7FF', borderRadius: 10, padding: 14, marginBottom: 14 }}>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label>Serial Number / IMEI <Required /></label>
-                  <input className="form-control" placeholder="e.g. 350922948431888"
-                    value={form.serial_imei} onChange={e => set('serial_imei', e.target.value)}
-                    style={{ fontFamily: 'monospace' }} />
+              {/* 4. Items Section */}
+              <div style={{ border: '1.5px solid #E0E7FF', borderRadius: 10, padding: 14, marginBottom: 14, background: '#F8F7FF' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    📦 Items
+                  </div>
+                  <button type="button" onClick={addItem} className="btn btn-outline btn-sm">
+                    + Add Item
+                  </button>
                 </div>
+                {form.items.map((item, index) => (
+                  <div key={index} style={{ background: 'white', border: '1px solid #E0E7FF', borderRadius: 8, padding: 12, marginBottom: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>ITEM {index + 1}</span>
+                      {form.items.length > 1 && (
+                        <button type="button" onClick={() => removeItem(index)}
+                          style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: 16, padding: 0 }}>✕</button>
+                      )}
+                    </div>
+                    <div className="form-group">
+                      <label>Item Description</label>
+                      <input className="form-control" placeholder="e.g. Apple iPhone 17 Pro Max 256GB"
+                        value={item.item_description}
+                        onChange={e => setItem(index, 'item_description', e.target.value)} />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>Serial Number / IMEI</label>
+                      <input className="form-control" placeholder="e.g. 350922948431888"
+                        value={item.serial_imei}
+                        onChange={e => setItem(index, 'serial_imei', e.target.value)}
+                        style={{ fontFamily: 'monospace' }} />
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              {/* 6. Payment + Salesperson + Out Status + Cashier */}
+              {/* 5. Payment + Salesperson + Out Status + Cashier */}
               <div className="grid-2">
                 <div className="form-group">
                   <label>Payment Method</label>
@@ -283,14 +351,11 @@ export default function SalesEntry() {
                   <input className="form-control" value={form.cashier}
                     onChange={e => set('cashier', e.target.value)} />
                 </div>
-
-                {/* 7. Invoice Value — after Cashier */}
                 <div className="form-group">
                   <label>Invoice Value (Rs.)</label>
                   <input type="number" className="form-control" placeholder="0.00"
                     value={form.invoice_value} onChange={e => set('invoice_value', e.target.value)} />
                 </div>
-
                 <div className="form-group">
                   <label>Google Review</label>
                   <select className="form-control" value={form.google_review}
@@ -302,14 +367,13 @@ export default function SalesEntry() {
                 </div>
               </div>
 
-              {/* 8. Remarks */}
               <div className="form-group">
                 <label>Remarks</label>
                 <textarea className="form-control" rows={2} value={form.remarks}
                   onChange={e => set('remarks', e.target.value)} />
               </div>
 
-              {/* 9. Outside Purchase Toggle */}
+              {/* 6. Outside Purchase Toggle */}
               <div style={{ border: '1.5px solid #FDE68A', borderRadius: 10, padding: 14, background: '#FFFBEB' }}>
                 <div className="flex items-center gap-2" style={{ marginBottom: showSupplier ? 12 : 0 }}>
                   <input type="checkbox" id="supplierToggle" checked={showSupplier}
