@@ -7,13 +7,13 @@ const BRANCHES = ['Prime', 'Liberty', 'Marino'];
 const PAYMENT_METHODS = ['Full Cash', 'Full Bank Transfer', 'Full Card', 'Partial Payment'];
 const BRANCH_BADGE = { Prime: 'badge-prime', Liberty: 'badge-liberty', Marino: 'badge-marino' };
 
-const emptyItem = () => ({ item_description: '', serial_imei: '' });
+const emptyItem = () => ({ item_description: '', serial_imei: '', invoice_value: '', cost: '', supplier_name: '' });
 
 const empty = (branch, date) => ({
   branch: branch || '', sale_date: date || format(new Date(), 'yyyy-MM-dd'),
   inv_no: '', acc_inv_no: '', customer_name: '', contact: '',
   payment_method: '', sales_person: '', out_status: 'NO', cashier: '',
-  invoice_value: '', google_review: '', remarks: '', supplier_name: '', cost: '',
+  google_review: '', remarks: '',
   items: [emptyItem()]
 });
 
@@ -27,7 +27,6 @@ export default function SalesEntry() {
   const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [showSupplier, setShowSupplier] = useState(false);
   const [expandedRow, setExpandedRow] = useState(null);
 
   const fetchSales = useCallback(async () => {
@@ -40,7 +39,6 @@ export default function SalesEntry() {
 
   const openAdd = () => {
     setForm(empty(branch, date));
-    setShowSupplier(false);
     setEditId(null);
     setModal('add');
   };
@@ -49,11 +47,13 @@ export default function SalesEntry() {
     setForm({
       ...sale,
       sale_date: sale.sale_date ? format(new Date(sale.sale_date), 'yyyy-MM-dd') : date,
-      cost: sale.cost || '',
-      invoice_value: sale.invoice_value || '',
-      items: sale.items && sale.items.length > 0 ? sale.items : [emptyItem()]
+      items: sale.items && sale.items.length > 0 ? sale.items.map(i => ({
+        ...i,
+        invoice_value: i.invoice_value || '',
+        cost: i.cost || '',
+        supplier_name: i.supplier_name || ''
+      })) : [emptyItem()]
     });
-    setShowSupplier(!!(sale.supplier_name || sale.cost));
     setEditId(sale.id);
     setModal('edit');
   };
@@ -101,6 +101,8 @@ export default function SalesEntry() {
       items: f.items.length > 1 ? f.items.filter((_, i) => i !== index) : f.items
     }));
   };
+
+  const totalValue = (items) => items.reduce((s, i) => s + parseFloat(i.invoice_value || 0), 0);
 
   return (
     <div>
@@ -157,7 +159,7 @@ export default function SalesEntry() {
                   <th>Customer</th>
                   <th>Contact</th>
                   <th>Items</th>
-                  <th>Value</th>
+                  <th>Total Value</th>
                   <th>Payment</th>
                   <th>Salesperson</th>
                   <th>Out</th>
@@ -177,7 +179,9 @@ export default function SalesEntry() {
                           {s.items?.length || 0} item{s.items?.length !== 1 ? 's' : ''} {expandedRow === s.id ? '▲' : '▼'}
                         </button>
                       </td>
-                      <td style={{ fontWeight: 600 }}>{s.invoice_value ? `Rs. ${Number(s.invoice_value).toLocaleString()}` : ''}</td>
+                      <td style={{ fontWeight: 600, color: 'var(--accent)' }}>
+                        Rs. {s.items ? s.items.reduce((sum, item) => sum + parseFloat(item.invoice_value || 0), 0).toLocaleString() : 0}
+                      </td>
                       <td>{s.payment_method}</td>
                       <td>{s.sales_person}</td>
                       <td>
@@ -194,7 +198,7 @@ export default function SalesEntry() {
                         </div>
                       </td>
                     </tr>
-                    {/* Expanded Items Row */}
+                    {/* Expanded Items */}
                     {expandedRow === s.id && s.items && s.items.length > 0 && (
                       <tr>
                         <td colSpan={9} style={{ background: '#F8F7FF', padding: '8px 16px' }}>
@@ -204,6 +208,9 @@ export default function SalesEntry() {
                                 <th style={{ fontSize: 10 }}>#</th>
                                 <th style={{ fontSize: 10 }}>Item Description</th>
                                 <th style={{ fontSize: 10 }}>Serial / IMEI</th>
+                                <th style={{ fontSize: 10 }}>Invoice Value</th>
+                                <th style={{ fontSize: 10 }}>Cost</th>
+                                <th style={{ fontSize: 10 }}>Supplier</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -212,8 +219,26 @@ export default function SalesEntry() {
                                   <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{idx + 1}</td>
                                   <td style={{ fontSize: 12 }}>{item.item_description}</td>
                                   <td style={{ fontSize: 12, fontFamily: 'monospace' }}>{item.serial_imei}</td>
+                                  <td style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>
+                                    {item.invoice_value ? `Rs. ${Number(item.invoice_value).toLocaleString()}` : '-'}
+                                  </td>
+                                  <td style={{ fontSize: 12 }}>
+                                    {item.cost ? `Rs. ${Number(item.cost).toLocaleString()}` : '-'}
+                                  </td>
+                                  <td style={{ fontSize: 12 }}>{item.supplier_name || '-'}</td>
                                 </tr>
                               ))}
+                              {/* Total row */}
+                              <tr style={{ background: '#EEF2FF' }}>
+                                <td colSpan={3} style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}>TOTAL</td>
+                                <td style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>
+                                  Rs. {s.items.reduce((sum, item) => sum + parseFloat(item.invoice_value || 0), 0).toLocaleString()}
+                                </td>
+                                <td style={{ fontSize: 12, fontWeight: 700 }}>
+                                  Rs. {s.items.reduce((sum, item) => sum + parseFloat(item.cost || 0), 0).toLocaleString()}
+                                </td>
+                                <td></td>
+                              </tr>
                             </tbody>
                           </table>
                         </td>
@@ -282,20 +307,26 @@ export default function SalesEntry() {
                 </div>
               </div>
 
-              {/* 4. Items Section */}
+              {/* 4. Items */}
               <div style={{ border: '1.5px solid #E0E7FF', borderRadius: 10, padding: 14, marginBottom: 14, background: '#F8F7FF' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     📦 Items
                   </div>
-                  <button type="button" onClick={addItem} className="btn btn-outline btn-sm">
-                    + Add Item
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {form.items.length > 0 && (
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>
+                        Total: Rs. {totalValue(form.items).toLocaleString()}
+                      </span>
+                    )}
+                    <button type="button" onClick={addItem} className="btn btn-outline btn-sm">+ Add Item</button>
+                  </div>
                 </div>
+
                 {form.items.map((item, index) => (
                   <div key={index} style={{ background: 'white', border: '1px solid #E0E7FF', borderRadius: 8, padding: 12, marginBottom: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>ITEM {index + 1}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--primary)' }}>ITEM {index + 1}</span>
                       {form.items.length > 1 && (
                         <button type="button" onClick={() => removeItem(index)}
                           style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: 16, padding: 0 }}>✕</button>
@@ -307,12 +338,41 @@ export default function SalesEntry() {
                         value={item.item_description}
                         onChange={e => setItem(index, 'item_description', e.target.value)} />
                     </div>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label>Serial Number / IMEI</label>
-                      <input className="form-control" placeholder="e.g. 350922948431888"
-                        value={item.serial_imei}
-                        onChange={e => setItem(index, 'serial_imei', e.target.value)}
-                        style={{ fontFamily: 'monospace' }} />
+                    <div className="grid-2">
+                      <div className="form-group">
+                        <label>Serial Number / IMEI</label>
+                        <input className="form-control" placeholder="e.g. 350922948431888"
+                          value={item.serial_imei}
+                          onChange={e => setItem(index, 'serial_imei', e.target.value)}
+                          style={{ fontFamily: 'monospace' }} />
+                      </div>
+                      <div className="form-group">
+                        <label>Invoice Value (Rs.)</label>
+                        <input type="number" className="form-control" placeholder="0.00"
+                          value={item.invoice_value}
+                          onChange={e => setItem(index, 'invoice_value', e.target.value)} />
+                      </div>
+                    </div>
+
+                    {/* Outside Purchase per item */}
+                    <div style={{ borderTop: '1px dashed #E0E7FF', paddingTop: 10, marginTop: 4 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#92400E', marginBottom: 8 }}>
+                        📦 Outside Purchase? (Optional)
+                      </div>
+                      <div className="grid-2">
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label>Supplier Name</label>
+                          <input className="form-control" placeholder="Supplier name"
+                            value={item.supplier_name}
+                            onChange={e => setItem(index, 'supplier_name', e.target.value)} />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label>Cost (Rs.)</label>
+                          <input type="number" className="form-control" placeholder="0.00"
+                            value={item.cost}
+                            onChange={e => setItem(index, 'cost', e.target.value)} />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -352,11 +412,6 @@ export default function SalesEntry() {
                     onChange={e => set('cashier', e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label>Invoice Value (Rs.)</label>
-                  <input type="number" className="form-control" placeholder="0.00"
-                    value={form.invoice_value} onChange={e => set('invoice_value', e.target.value)} />
-                </div>
-                <div className="form-group">
                   <label>Google Review</label>
                   <select className="form-control" value={form.google_review}
                     onChange={e => set('google_review', e.target.value)}>
@@ -371,32 +426,6 @@ export default function SalesEntry() {
                 <label>Remarks</label>
                 <textarea className="form-control" rows={2} value={form.remarks}
                   onChange={e => set('remarks', e.target.value)} />
-              </div>
-
-              {/* 6. Outside Purchase Toggle */}
-              <div style={{ border: '1.5px solid #FDE68A', borderRadius: 10, padding: 14, background: '#FFFBEB' }}>
-                <div className="flex items-center gap-2" style={{ marginBottom: showSupplier ? 12 : 0 }}>
-                  <input type="checkbox" id="supplierToggle" checked={showSupplier}
-                    onChange={e => setShowSupplier(e.target.checked)}
-                    style={{ width: 18, height: 18, cursor: 'pointer' }} />
-                  <label htmlFor="supplierToggle" style={{ fontSize: 12, fontWeight: 700, color: '#92400E', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    📦 Outside Purchase? (Supplier & Cost)
-                  </label>
-                </div>
-                {showSupplier && (
-                  <div className="grid-2" style={{ marginTop: 12 }}>
-                    <div className="form-group">
-                      <label>Supplier Name</label>
-                      <input className="form-control" placeholder="Supplier name"
-                        value={form.supplier_name} onChange={e => set('supplier_name', e.target.value)} />
-                    </div>
-                    <div className="form-group">
-                      <label>Cost (Rs.)</label>
-                      <input type="number" className="form-control" placeholder="0.00"
-                        value={form.cost} onChange={e => set('cost', e.target.value)} />
-                    </div>
-                  </div>
-                )}
               </div>
 
             </div>
