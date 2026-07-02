@@ -18,6 +18,13 @@ export default function Dashboard() {
   const [imeiLoading, setImeiLoading] = useState(false);
   const [expandedRow, setExpandedRow] = useState(null);
 
+  // Export date range
+  const [showExportPanel, setShowExportPanel] = useState(false);
+  const [exportFrom, setExportFrom] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [exportTo, setExportTo] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [exportBranch, setExportBranch] = useState(user?.role === 'admin' ? '' : user?.branch);
+  const [exporting, setExporting] = useState(false);
+
   const fetchSales = useCallback(async () => {
     setLoading(true);
     try {
@@ -26,8 +33,10 @@ export default function Dashboard() {
       if (branch) params.branch = branch;
       const { data } = await api.get('/sales', { params });
       setSales(data);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+    } catch (err) {
+      console.error(err);
+      setTimeout(() => fetchSales(), 3000);
+    } finally { setLoading(false); }
   }, [date, branch]);
 
   useEffect(() => { fetchSales(); }, [fetchSales]);
@@ -45,17 +54,22 @@ export default function Dashboard() {
   };
 
   const handleExport = async (type) => {
-    const params = new URLSearchParams();
-    if (date) params.set('date', date);
-    if (branch) params.set('branch', branch);
-    const token = localStorage.getItem('token');
-    const url = `${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/sales/export/${type}?${params}`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    const blob = await res.blob();
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `sales_${date || 'all'}.${type === 'excel' ? 'xlsx' : 'pdf'}`;
-    link.click();
+    setExporting(true);
+    try {
+      const params = new URLSearchParams();
+      if (exportFrom) params.set('from', exportFrom);
+      if (exportTo) params.set('to', exportTo);
+      if (exportBranch) params.set('branch', exportBranch);
+      const token = localStorage.getItem('token');
+      const url = `${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/sales/export/${type}?${params}`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const blob = await res.blob();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `sales_${exportFrom}_to_${exportTo}_${exportBranch || 'all'}.${type === 'excel' ? 'xlsx' : 'pdf'}`;
+      link.click();
+    } catch (err) { alert('Export failed. Please try again.'); }
+    finally { setExporting(false); }
   };
 
   const totalValue = sales.reduce((s, r) => s + parseFloat(r.invoice_value || 0), 0);
@@ -63,6 +77,7 @@ export default function Dashboard() {
 
   return (
     <div>
+      {/* Header */}
       <div className="flex items-center gap-3" style={{ marginBottom: 24 }}>
         <div>
           <h2>📊 Sales Dashboard</h2>
@@ -70,11 +85,74 @@ export default function Dashboard() {
             {user?.role === 'admin' ? 'All branches' : `${user?.branch} branch`}
           </p>
         </div>
-        <div className="flex gap-2 ml-auto">
-          <button className="btn btn-outline btn-sm" onClick={() => handleExport('excel')}>⬇ Excel</button>
-          <button className="btn btn-outline btn-sm" onClick={() => handleExport('pdf')}>⬇ PDF</button>
-        </div>
+        <button className="btn btn-primary ml-auto" onClick={() => setShowExportPanel(!showExportPanel)}>
+          ⬇ Export
+        </button>
       </div>
+
+      {/* Export Panel */}
+      {showExportPanel && (
+        <div className="card" style={{ marginBottom: 20, border: '1.5px solid #10B981' }}>
+          <div className="card-body" style={{ padding: '16px 20px' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#065F46', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              📥 Export Sales Report
+            </div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label>From Date</label>
+                <input type="date" className="form-control" style={{ width: 160 }}
+                  value={exportFrom} onChange={e => setExportFrom(e.target.value)} />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label>To Date</label>
+                <input type="date" className="form-control" style={{ width: 160 }}
+                  value={exportTo} onChange={e => setExportTo(e.target.value)} />
+              </div>
+              {user?.role === 'admin' && (
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Branch</label>
+                  <select className="form-control" style={{ width: 140 }}
+                    value={exportBranch} onChange={e => setExportBranch(e.target.value)}>
+                    <option value="">All Branches</option>
+                    {BRANCHES.map(b => <option key={b}>{b}</option>)}
+                  </select>
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-success" onClick={() => handleExport('excel')} disabled={exporting}>
+                  {exporting ? '...' : '⬇ Excel'}
+                </button>
+                <button className="btn btn-outline" onClick={() => handleExport('pdf')} disabled={exporting}>
+                  {exporting ? '...' : '⬇ PDF'}
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Range Buttons */}
+            <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', alignSelf: 'center' }}>QUICK:</span>
+              {[
+                { label: 'Today', from: format(new Date(), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
+                { label: 'This Week', from: format(new Date(new Date().setDate(new Date().getDate() - new Date().getDay())), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
+                { label: 'This Month', from: format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
+                { label: 'Last Month', from: format(new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1), 'yyyy-MM-dd'), to: format(new Date(new Date().getFullYear(), new Date().getMonth(), 0), 'yyyy-MM-dd') },
+                { label: 'Last 7 Days', from: format(new Date(new Date().setDate(new Date().getDate() - 7)), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
+                { label: 'Last 30 Days', from: format(new Date(new Date().setDate(new Date().getDate() - 30)), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
+              ].map(r => (
+                <button key={r.label} onClick={() => { setExportFrom(r.from); setExportTo(r.to); }}
+                  style={{
+                    background: exportFrom === r.from && exportTo === r.to ? 'var(--primary)' : '#F3F4F6',
+                    color: exportFrom === r.from && exportTo === r.to ? 'white' : 'var(--text)',
+                    border: 'none', padding: '5px 12px', borderRadius: 20,
+                    fontSize: 12, fontWeight: 500, cursor: 'pointer'
+                  }}>
+                  {r.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* IMEI Search */}
       <div className="card" style={{ marginBottom: 20, border: '1.5px solid #818CF8' }}>
@@ -126,12 +204,11 @@ export default function Dashboard() {
                         { label: 'Contact', value: r.contact },
                         { label: 'Item', value: r.item_description },
                         { label: 'IMEI / Serial', value: r.serial_imei },
-                        { label: 'Invoice Value', value: r.invoice_value ? `Rs. ${Number(r.invoice_value).toLocaleString()}` : '-' },
+                        { label: 'Invoice Value', value: r.item_invoice_value ? `Rs. ${Number(r.item_invoice_value).toLocaleString()}` : '-' },
                         { label: 'Payment', value: r.payment_method },
                         { label: 'Sales Person', value: r.sales_person },
                         { label: 'Cashier', value: r.cashier || '-' },
                         { label: 'Supplier', value: r.supplier_name || '-' },
-                        { label: 'Cost', value: r.cost ? `Rs. ${Number(r.cost).toLocaleString()}` : '-' },
                         { label: 'ACC INV No.', value: r.acc_inv_no || '-' },
                         { label: 'INV No.', value: r.inv_no || '-' },
                         { label: 'Google Review', value: r.google_review || '-' },
@@ -203,7 +280,11 @@ export default function Dashboard() {
         </div>
         <div className="table-wrap">
           {loading ? (
-            <div className="empty-state"><p>Loading...</p></div>
+            <div className="empty-state">
+              <div style={{ fontSize: 36 }}>⏳</div>
+              <p style={{ fontWeight: 600, marginTop: 8 }}>Loading sales data...</p>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Please wait...</p>
+            </div>
           ) : sales.length === 0 ? (
             <div className="empty-state">
               <div style={{ fontSize: 40 }}>📭</div>
@@ -241,7 +322,9 @@ export default function Dashboard() {
                           {s.items?.length || 0} item{s.items?.length !== 1 ? 's' : ''} {expandedRow === s.id ? '▲' : '▼'}
                         </button>
                       </td>
-                      <td style={{ fontWeight: 600, color: 'var(--accent)' }}>{s.invoice_value ? `Rs. ${Number(s.invoice_value).toLocaleString()}` : ''}</td>
+                      <td style={{ fontWeight: 600, color: 'var(--accent)' }}>
+                        {s.invoice_value ? `Rs. ${Number(s.invoice_value).toLocaleString()}` : ''}
+                      </td>
                       <td><span style={{ fontSize: 11, background: '#F3F4F6', padding: '2px 7px', borderRadius: 12 }}>{s.payment_method}</span></td>
                       <td>{s.sales_person}</td>
                       <td>
@@ -265,6 +348,9 @@ export default function Dashboard() {
                                   <th style={{ fontSize: 10 }}>#</th>
                                   <th style={{ fontSize: 10 }}>Item Description</th>
                                   <th style={{ fontSize: 10 }}>Serial / IMEI</th>
+                                  <th style={{ fontSize: 10 }}>Invoice Value</th>
+                                  <th style={{ fontSize: 10 }}>Cost</th>
+                                  <th style={{ fontSize: 10 }}>Supplier</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -273,8 +359,25 @@ export default function Dashboard() {
                                     <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{idx + 1}</td>
                                     <td style={{ fontSize: 12 }}>{item.item_description}</td>
                                     <td style={{ fontSize: 12, fontFamily: 'monospace' }}>{item.serial_imei}</td>
+                                    <td style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>
+                                      {item.invoice_value ? `Rs. ${Number(item.invoice_value).toLocaleString()}` : '-'}
+                                    </td>
+                                    <td style={{ fontSize: 12 }}>
+                                      {item.cost ? `Rs. ${Number(item.cost).toLocaleString()}` : '-'}
+                                    </td>
+                                    <td style={{ fontSize: 12 }}>{item.supplier_name || '-'}</td>
                                   </tr>
                                 ))}
+                                <tr style={{ background: '#EEF2FF' }}>
+                                  <td colSpan={3} style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}>TOTAL</td>
+                                  <td style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>
+                                    Rs. {s.items.reduce((sum, item) => sum + parseFloat(item.invoice_value || 0), 0).toLocaleString()}
+                                  </td>
+                                  <td style={{ fontSize: 12, fontWeight: 700 }}>
+                                    Rs. {s.items.reduce((sum, item) => sum + parseFloat(item.cost || 0), 0).toLocaleString()}
+                                  </td>
+                                  <td></td>
+                                </tr>
                               </tbody>
                             </table>
                           ) : (
