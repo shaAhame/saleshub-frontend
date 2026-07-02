@@ -35,8 +35,9 @@ export default function Dashboard() {
       setSales(data);
     } catch (err) {
       console.error(err);
-      setTimeout(() => fetchSales(), 3000);
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }, [date, branch]);
 
   useEffect(() => { fetchSales(); }, [fetchSales]);
@@ -120,10 +121,10 @@ export default function Dashboard() {
               )}
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn btn-success" onClick={() => handleExport('excel')} disabled={exporting}>
-                  {exporting ? '...' : '⬇ Excel'}
+                  {exporting ? '⏳...' : '⬇ Excel'}
                 </button>
                 <button className="btn btn-outline" onClick={() => handleExport('pdf')} disabled={exporting}>
-                  {exporting ? '...' : '⬇ PDF'}
+                  {exporting ? '⏳...' : '⬇ PDF'}
                 </button>
               </div>
             </div>
