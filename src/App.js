@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import SalesEntry from './pages/SalesEntry';
 import AdminUsers from './pages/AdminUsers';
+import SupplierReport from './pages/SupplierReport';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -55,7 +56,6 @@ function WakeUp({ children }) {
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
-
   return children;
 }
 
@@ -80,6 +80,7 @@ export default function App() {
               <Route index element={<Dashboard />} />
               <Route path="sales" element={<SalesEntry />} />
               <Route path="users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+              <Route path="supplier-report" element={<AdminRoute><SupplierReport /></AdminRoute>} />
             </Route>
           </Routes>
         </BrowserRouter>
