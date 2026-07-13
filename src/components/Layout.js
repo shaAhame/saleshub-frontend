@@ -15,13 +15,16 @@ export default function Layout() {
   const navItems = [
     { to: '/', icon: '🏠', label: 'Dashboard' },
     { to: '/sales', icon: '📝', label: 'Sales Entry' },
-    ...(user?.role === 'admin' ? [{ to: '/users', icon: '👥', label: 'Users' }] : [])
+    ...(user?.role === 'admin' ? [
+      { to: '/supplier-report', icon: '📦', label: 'Supplier Report' },
+      { to: '/users', icon: '👥', label: 'Users' },
+    ] : [])
   ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
 
-      {/* Top Nav Bar (Mobile + Desktop) */}
+      {/* Top Nav Bar */}
       <header style={{
         background: '#1E1B4B', color: 'white',
         padding: '0 16px', height: 56,
@@ -104,7 +107,6 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      {/* CSS for desktop nav */}
       <style>{`
         @media (min-width: 768px) {
           .desktop-nav { display: flex !important; }
