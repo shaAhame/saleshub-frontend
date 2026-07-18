@@ -1,8 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import api from '../utils/api';
 
 const BRANCHES = ['Prime', 'Liberty', 'Marino'];
+
+const KNOWN_SUPPLIERS = [
+  'Intouch', 'Yufliq', 'Tech Mart', 'Ishaq', 'Apple Mall',
+  'Future Link', 'Future Store', 'Luxury', 'Mobo', 'Riham',
+  'Present Solution', 'My Apple', 'GQ'
+];
 
 export default function SupplierReport() {
   const [from, setFrom] = useState(format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'));
@@ -10,6 +16,7 @@ export default function SupplierReport() {
   const [branch, setBranch] = useState('');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [supplierSearch, setSupplierSearch] = useState('');
 
   const fetchReport = async () => {
     setLoading(true);
@@ -18,6 +25,7 @@ export default function SupplierReport() {
       if (branch) params.branch = branch;
       const { data: res } = await api.get('/sales/supplier-report', { params });
       setData(res);
+      setSupplierSearch('');
     } catch (err) {
       alert('Error loading report');
     } finally { setLoading(false); }
@@ -27,6 +35,7 @@ export default function SupplierReport() {
     try {
       const params = new URLSearchParams({ from, to });
       if (branch) params.set('branch', branch);
+      if (supplierSearch) params.set('supplier', supplierSearch);
       const token = localStorage.getItem('token');
       const url = `${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/sales/supplier-report/export/${type}?${params}`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
@@ -47,23 +56,36 @@ export default function SupplierReport() {
     { label: 'Last 30 Days', from: format(new Date(new Date().setDate(new Date().getDate() - 30)), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
   ];
 
-  // Group by supplier
-  const supplierGroups = data ? data.reduce((acc, row) => {
-    const key = row.supplier_name || 'No Supplier';
-    if (!acc[key]) acc[key] = { items: [], totalCost: 0, totalInvoice: 0 };
-    acc[key].items.push(row);
-    acc[key].totalCost += parseFloat(row.cost || 0);
-    acc[key].totalInvoice += parseFloat(row.invoice_value || 0);
-    return acc;
-  }, {}) : {};
+  const supplierGroups = useMemo(() => {
+    if (!data) return {};
+    return data.reduce((acc, row) => {
+      const key = row.supplier_name || 'No Supplier';
+      if (!acc[key]) acc[key] = { items: [], totalCost: 0, totalInvoice: 0 };
+      acc[key].items.push(row);
+      acc[key].totalCost += parseFloat(row.cost || 0);
+      acc[key].totalInvoice += parseFloat(row.invoice_value || 0);
+      return acc;
+    }, {});
+  }, [data]);
 
-  const grandTotalCost = data ? data.reduce((s, r) => s + parseFloat(r.cost || 0), 0) : 0;
-  const grandTotalInvoice = data ? data.reduce((s, r) => s + parseFloat(r.invoice_value || 0), 0) : 0;
+  const filteredGroups = useMemo(() => {
+    if (!supplierSearch.trim()) return supplierGroups;
+    const search = supplierSearch.toLowerCase();
+    return Object.fromEntries(
+      Object.entries(supplierGroups).filter(([name]) =>
+        name.toLowerCase().includes(search)
+      )
+    );
+  }, [supplierGroups, supplierSearch]);
+
+  const availableSuppliers = useMemo(() => Object.keys(supplierGroups).sort(), [supplierGroups]);
+
+  const grandTotalCost = Object.values(filteredGroups).reduce((s, g) => s + g.totalCost, 0);
+  const grandTotalInvoice = Object.values(filteredGroups).reduce((s, g) => s + g.totalInvoice, 0);
   const grandProfit = grandTotalInvoice - grandTotalCost;
 
   return (
     <div>
-      {/* Header */}
       <div className="flex items-center gap-3" style={{ marginBottom: 24 }}>
         <div>
           <h2>📦 Supplier Report</h2>
@@ -104,7 +126,6 @@ export default function SupplierReport() {
             </button>
           </div>
 
-          {/* Quick Range */}
           <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', alignSelf: 'center' }}>QUICK:</span>
             {quickRanges.map(r => (
@@ -122,7 +143,6 @@ export default function SupplierReport() {
         </div>
       </div>
 
-      {/* No data yet */}
       {!data && !loading && (
         <div className="card">
           <div className="empty-state">
@@ -132,7 +152,6 @@ export default function SupplierReport() {
         </div>
       )}
 
-      {/* Loading */}
       {loading && (
         <div className="card">
           <div className="empty-state">
@@ -142,15 +161,14 @@ export default function SupplierReport() {
         </div>
       )}
 
-      {/* Results */}
       {data && !loading && (
         <>
-          {/* Summary Stats */}
+          {/* Stats */}
           <div className="grid-3" style={{ marginBottom: 20 }}>
             {[
-              { label: 'Total Items Purchased', value: data.length, icon: '📦', color: '#4F46E5' },
+              { label: 'Total Items', value: Object.values(filteredGroups).reduce((s, g) => s + g.items.length, 0), icon: '📦', color: '#4F46E5' },
               { label: 'Total Cost', value: `Rs. ${grandTotalCost.toLocaleString()}`, icon: '💸', color: '#EF4444' },
-              { label: 'Total Invoice Value', value: `Rs. ${grandTotalInvoice.toLocaleString()}`, icon: '💰', color: '#10B981' },
+              { label: 'Total Invoice', value: `Rs. ${grandTotalInvoice.toLocaleString()}`, icon: '💰', color: '#10B981' },
             ].map(s => (
               <div key={s.label} className="card">
                 <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -166,7 +184,7 @@ export default function SupplierReport() {
 
           {/* Profit Card */}
           <div className="card" style={{ marginBottom: 20, border: `1.5px solid ${grandProfit >= 0 ? '#10B981' : '#EF4444'}` }}>
-            <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
               <div style={{ fontSize: 28 }}>{grandProfit >= 0 ? '📈' : '📉'}</div>
               <div>
                 <div style={{ fontSize: 22, fontWeight: 800, color: grandProfit >= 0 ? '#10B981' : '#EF4444' }}>
@@ -185,14 +203,76 @@ export default function SupplierReport() {
             </div>
           </div>
 
+          {/* Supplier Search */}
+          <div className="card" style={{ marginBottom: 20, border: '1.5px solid #818CF8' }}>
+            <div className="card-body" style={{ padding: '14px 20px' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)', marginBottom: 10, textTransform: 'uppercase' }}>
+                🔍 Search / Filter Supplier
+              </div>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                <input
+                  className="form-control"
+                  style={{ maxWidth: 300 }}
+                  placeholder="Type supplier name to filter..."
+                  value={supplierSearch}
+                  onChange={e => setSupplierSearch(e.target.value)}
+                />
+                {supplierSearch && (
+                  <button className="btn btn-ghost btn-sm" onClick={() => setSupplierSearch('')}>✕ Clear</button>
+                )}
+              </div>
+
+              {availableSuppliers.length > 0 && (
+                <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => setSupplierSearch('')}
+                    style={{
+                      background: !supplierSearch ? 'var(--primary)' : '#F3F4F6',
+                      color: !supplierSearch ? 'white' : 'var(--text)',
+                      border: 'none', padding: '4px 10px', borderRadius: 20,
+                      fontSize: 11, fontWeight: 600, cursor: 'pointer'
+                    }}>
+                    All ({availableSuppliers.length})
+                  </button>
+                  {availableSuppliers.map(s => (
+                    <button key={s}
+                      onClick={() => setSupplierSearch(supplierSearch === s ? '' : s)}
+                      style={{
+                        background: supplierSearch === s ? 'var(--primary)' : '#F3F4F6',
+                        color: supplierSearch === s ? 'white' : 'var(--text)',
+                        border: 'none', padding: '4px 10px', borderRadius: 20,
+                        fontSize: 11, fontWeight: 500, cursor: 'pointer'
+                      }}>
+                      {s} ({supplierGroups[s]?.items.length || 0})
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {Object.keys(filteredGroups).length === 0 && (
+            <div className="card">
+              <div className="empty-state">
+                <div style={{ fontSize: 36 }}>🔍</div>
+                <p>No supplier found matching "<strong>{supplierSearch}</strong>"</p>
+              </div>
+            </div>
+          )}
+
           {/* Supplier Groups */}
-          {Object.entries(supplierGroups).map(([supplierName, group]) => (
+          {Object.entries(filteredGroups).map(([supplierName, group]) => (
             <div key={supplierName} className="card" style={{ marginBottom: 16 }}>
               <div className="card-header">
                 <div>
                   <h3>🏭 {supplierName}</h3>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
                     {group.items.length} item{group.items.length !== 1 ? 's' : ''}
+                    {!KNOWN_SUPPLIERS.map(s => s.toLowerCase()).includes(supplierName.toLowerCase()) && (
+                      <span style={{ marginLeft: 8, background: '#FEF3C7', color: '#B45309', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 10 }}>
+                        CUSTOM
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
@@ -245,7 +325,6 @@ export default function SupplierReport() {
                         </tr>
                       );
                     })}
-                    {/* Supplier Total Row */}
                     <tr style={{ background: '#F8F7FF', fontWeight: 700 }}>
                       <td colSpan={6} style={{ fontWeight: 700, color: 'var(--primary)' }}>TOTAL — {supplierName}</td>
                       <td style={{ color: '#EF4444', fontWeight: 700 }}>Rs. {group.totalCost.toLocaleString()}</td>
