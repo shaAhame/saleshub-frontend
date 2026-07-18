@@ -6,6 +6,11 @@ import api from '../utils/api';
 const BRANCHES = ['Prime', 'Liberty', 'Marino'];
 const PAYMENT_METHODS = ['Full Cash', 'Full Bank Transfer', 'Full Card', 'Partial Payment'];
 const BRANCH_BADGE = { Prime: 'badge-prime', Liberty: 'badge-liberty', Marino: 'badge-marino' };
+const KNOWN_SUPPLIERS = [
+  'Intouch', 'Yufliq', 'Tech Mart', 'Ishaq', 'Apple Mall',
+  'Future Link', 'Future Store', 'Luxury', 'Mobo', 'Riham',
+  'Present Solution', 'My Apple', 'GQ'
+];
 
 const emptyItem = () => ({ item_description: '', serial_imei: '', invoice_value: '', cost: '', supplier_name: '' });
 
@@ -59,6 +64,7 @@ export default function SalesEntry() {
   };
 
   const handleSave = async () => {
+    if (saving) return;
     setSaving(true);
     try {
       if (editId) {
@@ -101,8 +107,6 @@ export default function SalesEntry() {
       items: f.items.length > 1 ? f.items.filter((_, i) => i !== index) : f.items
     }));
   };
-
-  const totalValue = (items) => items.reduce((s, i) => s + parseFloat(i.invoice_value || 0), 0);
 
   return (
     <div>
@@ -198,7 +202,6 @@ export default function SalesEntry() {
                         </div>
                       </td>
                     </tr>
-                    {/* Expanded Items */}
                     {expandedRow === s.id && s.items && s.items.length > 0 && (
                       <tr>
                         <td colSpan={9} style={{ background: '#F8F7FF', padding: '8px 16px' }}>
@@ -228,7 +231,6 @@ export default function SalesEntry() {
                                   <td style={{ fontSize: 12 }}>{item.supplier_name || '-'}</td>
                                 </tr>
                               ))}
-                              {/* Total row */}
                               <tr style={{ background: '#EEF2FF' }}>
                                 <td colSpan={3} style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}>TOTAL</td>
                                 <td style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>
@@ -316,7 +318,7 @@ export default function SalesEntry() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     {form.items.length > 0 && (
                       <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>
-                        Total: Rs. {totalValue(form.items).toLocaleString()}
+                        Total: Rs. {form.items.reduce((s, i) => s + parseFloat(i.invoice_value || 0), 0).toLocaleString()}
                       </span>
                     )}
                     <button type="button" onClick={addItem} className="btn btn-outline btn-sm">+ Add Item</button>
@@ -354,7 +356,7 @@ export default function SalesEntry() {
                       </div>
                     </div>
 
-                    {/* Outside Purchase per item */}
+                    {/* Supplier per item */}
                     <div style={{ borderTop: '1px dashed #E0E7FF', paddingTop: 10, marginTop: 4 }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: '#92400E', marginBottom: 8 }}>
                         📦 Outside Purchase? (Optional)
@@ -362,9 +364,16 @@ export default function SalesEntry() {
                       <div className="grid-2">
                         <div className="form-group" style={{ marginBottom: 0 }}>
                           <label>Supplier Name</label>
-                          <input className="form-control" placeholder="Supplier name"
+                          <input
+                            className="form-control"
+                            placeholder="Type or select supplier..."
+                            list={`supplier-list-${index}`}
                             value={item.supplier_name}
-                            onChange={e => setItem(index, 'supplier_name', e.target.value)} />
+                            onChange={e => setItem(index, 'supplier_name', e.target.value)}
+                          />
+                          <datalist id={`supplier-list-${index}`}>
+                            {KNOWN_SUPPLIERS.map(s => <option key={s} value={s} />)}
+                          </datalist>
                         </div>
                         <div className="form-group" style={{ marginBottom: 0 }}>
                           <label>Cost (Rs.)</label>
