@@ -12,7 +12,10 @@ const KNOWN_SUPPLIERS = [
   'Present Solution', 'My Apple', 'GQ'
 ];
 
-const emptyItem = () => ({ item_description: '', serial_imei: '', invoice_value: '', cost: '', supplier_name: '' });
+const emptyItem = () => ({
+  item_description: '', serial_imei: '', invoice_value: '',
+  cost: '', supplier_name: '', qty: '1'
+});
 
 const empty = (branch, date) => ({
   branch: branch || '', sale_date: date || format(new Date(), 'yyyy-MM-dd'),
@@ -56,7 +59,8 @@ export default function SalesEntry() {
         ...i,
         invoice_value: i.invoice_value || '',
         cost: i.cost || '',
-        supplier_name: i.supplier_name || ''
+        supplier_name: i.supplier_name || '',
+        qty: i.qty || '1'
       })) : [emptyItem()]
     });
     setEditId(sale.id);
@@ -107,6 +111,9 @@ export default function SalesEntry() {
       items: f.items.length > 1 ? f.items.filter((_, i) => i !== index) : f.items
     }));
   };
+
+  const calcTotal = (items) =>
+    items.reduce((s, i) => s + (parseFloat(i.invoice_value || 0) * parseInt(i.qty || 1)), 0);
 
   return (
     <div>
@@ -184,7 +191,7 @@ export default function SalesEntry() {
                         </button>
                       </td>
                       <td style={{ fontWeight: 600, color: 'var(--accent)' }}>
-                        Rs. {s.items ? s.items.reduce((sum, item) => sum + parseFloat(item.invoice_value || 0), 0).toLocaleString() : 0}
+                        Rs. {s.items ? s.items.reduce((sum, item) => sum + (parseFloat(item.invoice_value || 0) * parseInt(item.qty || 1)), 0).toLocaleString() : 0}
                       </td>
                       <td>{s.payment_method}</td>
                       <td>{s.sales_person}</td>
@@ -211,7 +218,9 @@ export default function SalesEntry() {
                                 <th style={{ fontSize: 10 }}>#</th>
                                 <th style={{ fontSize: 10 }}>Item Description</th>
                                 <th style={{ fontSize: 10 }}>Serial / IMEI</th>
-                                <th style={{ fontSize: 10 }}>Invoice Value</th>
+                                <th style={{ fontSize: 10 }}>Qty</th>
+                                <th style={{ fontSize: 10 }}>Unit Price</th>
+                                <th style={{ fontSize: 10 }}>Total Value</th>
                                 <th style={{ fontSize: 10 }}>Cost</th>
                                 <th style={{ fontSize: 10 }}>Supplier</th>
                               </tr>
@@ -222,8 +231,12 @@ export default function SalesEntry() {
                                   <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{idx + 1}</td>
                                   <td style={{ fontSize: 12 }}>{item.item_description}</td>
                                   <td style={{ fontSize: 12, fontFamily: 'monospace' }}>{item.serial_imei}</td>
-                                  <td style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>
+                                  <td style={{ fontSize: 12, fontWeight: 600, textAlign: 'center' }}>{item.qty || 1}</td>
+                                  <td style={{ fontSize: 12 }}>
                                     {item.invoice_value ? `Rs. ${Number(item.invoice_value).toLocaleString()}` : '-'}
+                                  </td>
+                                  <td style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>
+                                    {item.invoice_value ? `Rs. ${(parseFloat(item.invoice_value) * parseInt(item.qty || 1)).toLocaleString()}` : '-'}
                                   </td>
                                   <td style={{ fontSize: 12 }}>
                                     {item.cost ? `Rs. ${Number(item.cost).toLocaleString()}` : '-'}
@@ -232,12 +245,12 @@ export default function SalesEntry() {
                                 </tr>
                               ))}
                               <tr style={{ background: '#EEF2FF' }}>
-                                <td colSpan={3} style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}>TOTAL</td>
+                                <td colSpan={5} style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}>TOTAL</td>
                                 <td style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>
-                                  Rs. {s.items.reduce((sum, item) => sum + parseFloat(item.invoice_value || 0), 0).toLocaleString()}
+                                  Rs. {s.items.reduce((sum, item) => sum + (parseFloat(item.invoice_value || 0) * parseInt(item.qty || 1)), 0).toLocaleString()}
                                 </td>
                                 <td style={{ fontSize: 12, fontWeight: 700 }}>
-                                  Rs. {s.items.reduce((sum, item) => sum + parseFloat(item.cost || 0), 0).toLocaleString()}
+                                  Rs. {s.items.reduce((sum, item) => sum + (parseFloat(item.cost || 0) * parseInt(item.qty || 1)), 0).toLocaleString()}
                                 </td>
                                 <td></td>
                               </tr>
@@ -316,11 +329,9 @@ export default function SalesEntry() {
                     📦 Items
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    {form.items.length > 0 && (
-                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>
-                        Total: Rs. {form.items.reduce((s, i) => s + parseFloat(i.invoice_value || 0), 0).toLocaleString()}
-                      </span>
-                    )}
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>
+                      Total: Rs. {calcTotal(form.items).toLocaleString()}
+                    </span>
                     <button type="button" onClick={addItem} className="btn btn-outline btn-sm">+ Add Item</button>
                   </div>
                 </div>
@@ -334,12 +345,14 @@ export default function SalesEntry() {
                           style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: 16, padding: 0 }}>✕</button>
                       )}
                     </div>
+
                     <div className="form-group">
                       <label>Item Description</label>
                       <input className="form-control" placeholder="e.g. Apple iPhone 17 Pro Max 256GB"
                         value={item.item_description}
                         onChange={e => setItem(index, 'item_description', e.target.value)} />
                     </div>
+
                     <div className="grid-2">
                       <div className="form-group">
                         <label>Serial Number / IMEI</label>
@@ -349,38 +362,58 @@ export default function SalesEntry() {
                           style={{ fontFamily: 'monospace' }} />
                       </div>
                       <div className="form-group">
-                        <label>Invoice Value (Rs.)</label>
-                        <input type="number" className="form-control" placeholder="0.00"
+                        <label>Qty</label>
+                        <input
+                          className="form-control"
+                          placeholder="1"
+                          inputMode="numeric"
+                          value={item.qty}
+                          onChange={e => setItem(index, 'qty', e.target.value)} />
+                      </div>
+                      <div className="form-group">
+                        <label>Invoice Value / Unit Price (Rs.)</label>
+                        <input
+                          className="form-control"
+                          placeholder="0.00"
+                          inputMode="decimal"
                           value={item.invoice_value}
                           onChange={e => setItem(index, 'invoice_value', e.target.value)} />
                       </div>
+                      <div className="form-group">
+                        <label>
+                          Cost (Rs.)
+                          {item.invoice_value && item.qty && (
+                            <span style={{ color: 'var(--accent)', fontWeight: 700, marginLeft: 8 }}>
+                              Total = Rs. {(parseFloat(item.invoice_value || 0) * parseInt(item.qty || 1)).toLocaleString()}
+                            </span>
+                          )}
+                        </label>
+                        <input
+                          className="form-control"
+                          placeholder="0.00"
+                          inputMode="decimal"
+                          value={item.cost}
+                          onChange={e => setItem(index, 'cost', e.target.value)} />
+                      </div>
                     </div>
 
-                    {/* Supplier per item */}
+                    {/* Supplier */}
                     <div style={{ borderTop: '1px dashed #E0E7FF', paddingTop: 10, marginTop: 4 }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: '#92400E', marginBottom: 8 }}>
                         📦 Outside Purchase? (Optional)
                       </div>
-                      <div className="grid-2">
-                        <div className="form-group" style={{ marginBottom: 0 }}>
-                          <label>Supplier Name</label>
-                          <input
-                            className="form-control"
-                            placeholder="Type or select supplier..."
-                            list={`supplier-list-${index}`}
-                            value={item.supplier_name}
-                            onChange={e => setItem(index, 'supplier_name', e.target.value)}
-                          />
-                          <datalist id={`supplier-list-${index}`}>
-                            {KNOWN_SUPPLIERS.map(s => <option key={s} value={s} />)}
-                          </datalist>
-                        </div>
-                        <div className="form-group" style={{ marginBottom: 0 }}>
-                          <label>Cost (Rs.)</label>
-                          <input type="number" className="form-control" placeholder="0.00"
-                            value={item.cost}
-                            onChange={e => setItem(index, 'cost', e.target.value)} />
-                        </div>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label>Supplier Name</label>
+                        <input
+                          className="form-control"
+                          placeholder="Type or select supplier..."
+                          list={`supplier-list-${index}`}
+                          value={item.supplier_name}
+                          onChange={e => setItem(index, 'supplier_name', e.target.value)}
+                        />
+                        <datalist id={`supplier-list-${index}`}>
+                          {KNOWN_SUPPLIERS.map(s => <option key={s} value={s} />)}
+                        </datalist>
                       </div>
                     </div>
                   </div>
