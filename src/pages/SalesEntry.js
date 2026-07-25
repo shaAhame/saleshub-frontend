@@ -209,6 +209,8 @@ export default function SalesEntry() {
                         </div>
                       </td>
                     </tr>
+
+                    {/* Expanded Items */}
                     {expandedRow === s.id && s.items && s.items.length > 0 && (
                       <tr>
                         <td colSpan={9} style={{ background: '#F8F7FF', padding: '8px 16px' }}>
@@ -220,8 +222,9 @@ export default function SalesEntry() {
                                 <th style={{ fontSize: 10 }}>Serial / IMEI</th>
                                 <th style={{ fontSize: 10 }}>Qty</th>
                                 <th style={{ fontSize: 10 }}>Unit Price</th>
-                                <th style={{ fontSize: 10 }}>Total Value</th>
-                                <th style={{ fontSize: 10 }}>Cost</th>
+                                <th style={{ fontSize: 10 }}>Total Invoice</th>
+                                <th style={{ fontSize: 10 }}>Unit Cost</th>
+                                <th style={{ fontSize: 10 }}>Total Cost</th>
                                 <th style={{ fontSize: 10 }}>Supplier</th>
                               </tr>
                             </thead>
@@ -231,25 +234,30 @@ export default function SalesEntry() {
                                   <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{idx + 1}</td>
                                   <td style={{ fontSize: 12 }}>{item.item_description}</td>
                                   <td style={{ fontSize: 12, fontFamily: 'monospace' }}>{item.serial_imei}</td>
-                                  <td style={{ fontSize: 12, fontWeight: 600, textAlign: 'center' }}>{item.qty || 1}</td>
+                                  <td style={{ fontSize: 12, fontWeight: 700, textAlign: 'center' }}>{item.qty || 1}</td>
                                   <td style={{ fontSize: 12 }}>
                                     {item.invoice_value ? `Rs. ${Number(item.invoice_value).toLocaleString()}` : '-'}
                                   </td>
-                                  <td style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>
+                                  <td style={{ fontSize: 12, fontWeight: 700, color: '#10B981' }}>
                                     {item.invoice_value ? `Rs. ${(parseFloat(item.invoice_value) * parseInt(item.qty || 1)).toLocaleString()}` : '-'}
                                   </td>
                                   <td style={{ fontSize: 12 }}>
                                     {item.cost ? `Rs. ${Number(item.cost).toLocaleString()}` : '-'}
                                   </td>
+                                  <td style={{ fontSize: 12, fontWeight: 700, color: '#EF4444' }}>
+                                    {item.cost ? `Rs. ${(parseFloat(item.cost) * parseInt(item.qty || 1)).toLocaleString()}` : '-'}
+                                  </td>
                                   <td style={{ fontSize: 12 }}>{item.supplier_name || '-'}</td>
                                 </tr>
                               ))}
+                              {/* Total Row */}
                               <tr style={{ background: '#EEF2FF' }}>
                                 <td colSpan={5} style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}>TOTAL</td>
-                                <td style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>
+                                <td style={{ fontSize: 12, fontWeight: 700, color: '#10B981' }}>
                                   Rs. {s.items.reduce((sum, item) => sum + (parseFloat(item.invoice_value || 0) * parseInt(item.qty || 1)), 0).toLocaleString()}
                                 </td>
-                                <td style={{ fontSize: 12, fontWeight: 700 }}>
+                                <td></td>
+                                <td style={{ fontSize: 12, fontWeight: 700, color: '#EF4444' }}>
                                   Rs. {s.items.reduce((sum, item) => sum + (parseFloat(item.cost || 0) * parseInt(item.qty || 1)), 0).toLocaleString()}
                                 </td>
                                 <td></td>
@@ -346,6 +354,7 @@ export default function SalesEntry() {
                       )}
                     </div>
 
+                    {/* Item Description */}
                     <div className="form-group">
                       <label>Item Description</label>
                       <input className="form-control" placeholder="e.g. Apple iPhone 17 Pro Max 256GB"
@@ -353,6 +362,7 @@ export default function SalesEntry() {
                         onChange={e => setItem(index, 'item_description', e.target.value)} />
                     </div>
 
+                    {/* IMEI + Qty */}
                     <div className="grid-2">
                       <div className="form-group">
                         <label>Serial Number / IMEI</label>
@@ -370,6 +380,10 @@ export default function SalesEntry() {
                           value={item.qty}
                           onChange={e => setItem(index, 'qty', e.target.value)} />
                       </div>
+                    </div>
+
+                    {/* Invoice Value + Cost */}
+                    <div className="grid-2">
                       <div className="form-group">
                         <label>Invoice Value / Unit Price (Rs.)</label>
                         <input
@@ -380,14 +394,7 @@ export default function SalesEntry() {
                           onChange={e => setItem(index, 'invoice_value', e.target.value)} />
                       </div>
                       <div className="form-group">
-                        <label>
-                          Cost (Rs.)
-                          {item.invoice_value && item.qty && (
-                            <span style={{ color: 'var(--accent)', fontWeight: 700, marginLeft: 8 }}>
-                              Total = Rs. {(parseFloat(item.invoice_value || 0) * parseInt(item.qty || 1)).toLocaleString()}
-                            </span>
-                          )}
-                        </label>
+                        <label>Cost / Unit (Rs.)</label>
                         <input
                           className="form-control"
                           placeholder="0.00"
@@ -396,6 +403,50 @@ export default function SalesEntry() {
                           onChange={e => setItem(index, 'cost', e.target.value)} />
                       </div>
                     </div>
+
+                    {/* Summary Box */}
+                    {(item.invoice_value || item.cost) && (
+                      <div style={{
+                        background: '#F0FDF4', border: '1px solid #86EFAC',
+                        borderRadius: 8, padding: '10px 14px', marginBottom: 10,
+                        display: 'flex', gap: 16, flexWrap: 'wrap'
+                      }}>
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>Qty</div>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>{item.qty || 1}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>Unit Price</div>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>
+                            Rs. {Number(item.invoice_value || 0).toLocaleString()}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>Total Invoice</div>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: '#10B981' }}>
+                            Rs. {(parseFloat(item.invoice_value || 0) * parseInt(item.qty || 1)).toLocaleString()}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>Unit Cost</div>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>
+                            Rs. {Number(item.cost || 0).toLocaleString()}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>Total Cost</div>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: '#EF4444' }}>
+                            Rs. {(parseFloat(item.cost || 0) * parseInt(item.qty || 1)).toLocaleString()}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>Profit</div>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: ((parseFloat(item.invoice_value || 0) - parseFloat(item.cost || 0)) * parseInt(item.qty || 1)) >= 0 ? '#10B981' : '#EF4444' }}>
+                            Rs. {((parseFloat(item.invoice_value || 0) - parseFloat(item.cost || 0)) * parseInt(item.qty || 1)).toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Supplier */}
                     <div style={{ borderTop: '1px dashed #E0E7FF', paddingTop: 10, marginTop: 4 }}>
