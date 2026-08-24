@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import SalesEntry from './pages/SalesEntry';
 import AdminUsers from './pages/AdminUsers';
 import SupplierReport from './pages/SupplierReport';
+import PurchaseInvoice from './pages/PurchaseInvoice';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -79,8 +80,9 @@ export default function App() {
             <Route path="/" element={<Private><Layout /></Private>}>
               <Route index element={<Dashboard />} />
               <Route path="sales" element={<SalesEntry />} />
-              <Route path="users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
               <Route path="supplier-report" element={<AdminRoute><SupplierReport /></AdminRoute>} />
+              <Route path="purchase-invoice" element={<AdminRoute><PurchaseInvoice /></AdminRoute>} />
+              <Route path="users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
             </Route>
           </Routes>
         </BrowserRouter>
