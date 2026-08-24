@@ -17,14 +17,13 @@ export default function Layout() {
     { to: '/sales', icon: '📝', label: 'Sales Entry' },
     ...(user?.role === 'admin' ? [
       { to: '/supplier-report', icon: '📦', label: 'Supplier Report' },
+      { to: '/purchase-invoice', icon: '🧾', label: 'Purchase Invoice' },
       { to: '/users', icon: '👥', label: 'Users' },
     ] : [])
   ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-
-      {/* Top Nav Bar */}
       <header style={{
         background: '#1E1B4B', color: 'white',
         padding: '0 16px', height: 56,
@@ -43,7 +42,6 @@ export default function Layout() {
           </span>
         </div>
 
-        {/* Desktop Nav */}
         <nav style={{ display: 'none', gap: 4 }} className="desktop-nav">
           {navItems.map(item => (
             <NavLink key={item.to} to={item.to} end style={({ isActive }) => ({
@@ -62,7 +60,6 @@ export default function Layout() {
           }}>🚪 Logout</button>
         </nav>
 
-        {/* Mobile Hamburger */}
         <button onClick={() => setMenuOpen(!menuOpen)} style={{
           background: 'none', border: 'none', color: 'white',
           fontSize: 22, cursor: 'pointer', padding: 4
@@ -71,7 +68,6 @@ export default function Layout() {
         </button>
       </header>
 
-      {/* Mobile Dropdown Menu */}
       {menuOpen && (
         <div style={{
           background: '#1E1B4B', borderBottom: '1px solid rgba(255,255,255,0.1)',
@@ -102,7 +98,6 @@ export default function Layout() {
         </div>
       )}
 
-      {/* Main Content */}
       <main style={{ flex: 1, padding: '16px', maxWidth: 1200, width: '100%', margin: '0 auto' }}>
         <Outlet />
       </main>
