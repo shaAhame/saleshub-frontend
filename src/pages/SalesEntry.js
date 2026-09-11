@@ -35,9 +35,7 @@ export default function SalesEntry() {
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [expandedRow, setExpandedRow] = useState(null);
-
-  // Out Status edit — admin only
-  const [outModal, setOutModal] = useState(null); // { id, out_status }
+  const [outModal, setOutModal] = useState(null);
   const [outSaving, setOutSaving] = useState(false);
 
   const fetchSales = useCallback(async () => {
@@ -197,7 +195,6 @@ export default function SalesEntry() {
                       </td>
                       <td>
                         <div className="flex gap-2">
-                          {/* Admin only — Out Status edit */}
                           {user?.role === 'admin' && (
                             <button
                               className="btn btn-outline btn-sm"
@@ -212,58 +209,101 @@ export default function SalesEntry() {
                     </tr>
 
                     {/* Expanded Items */}
-                    {expandedRow === s.id && s.items && s.items.length > 0 && (
+                    {expandedRow === s.id && (
                       <tr>
-                        <td colSpan={9} style={{ background: '#F8F7FF', padding: '8px 16px' }}>
-                          <table style={{ width: '100%', minWidth: 'unset' }}>
-                            <thead>
-                              <tr>
-                                <th style={{ fontSize: 10 }}>#</th>
-                                <th style={{ fontSize: 10 }}>Item Description</th>
-                                <th style={{ fontSize: 10 }}>Serial / IMEI</th>
-                                <th style={{ fontSize: 10 }}>Qty</th>
-                                <th style={{ fontSize: 10 }}>Unit Price</th>
-                                <th style={{ fontSize: 10 }}>Total Invoice</th>
-                                <th style={{ fontSize: 10 }}>Unit Cost</th>
-                                <th style={{ fontSize: 10 }}>Total Cost</th>
-                                <th style={{ fontSize: 10 }}>Supplier</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {s.items.map((item, idx) => (
-                                <tr key={item.id}>
-                                  <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{idx + 1}</td>
-                                  <td style={{ fontSize: 12 }}>{item.item_description}</td>
-                                  <td style={{ fontSize: 12, fontFamily: 'monospace' }}>{item.serial_imei}</td>
-                                  <td style={{ fontSize: 12, fontWeight: 700, textAlign: 'center' }}>{item.qty || 1}</td>
-                                  <td style={{ fontSize: 12 }}>
-                                    {item.invoice_value ? `Rs. ${Number(item.invoice_value).toLocaleString()}` : '-'}
-                                  </td>
-                                  <td style={{ fontSize: 12, fontWeight: 700, color: '#10B981' }}>
-                                    {item.invoice_value ? `Rs. ${(parseFloat(item.invoice_value) * parseInt(item.qty || 1)).toLocaleString()}` : '-'}
-                                  </td>
-                                  <td style={{ fontSize: 12 }}>
-                                    {item.cost ? `Rs. ${Number(item.cost).toLocaleString()}` : '-'}
-                                  </td>
-                                  <td style={{ fontSize: 12, fontWeight: 700, color: '#EF4444' }}>
-                                    {item.cost ? `Rs. ${(parseFloat(item.cost) * parseInt(item.qty || 1)).toLocaleString()}` : '-'}
-                                  </td>
-                                  <td style={{ fontSize: 12 }}>{item.supplier_name || '-'}</td>
+                        <td colSpan={9} style={{ background: '#F8F7FF', padding: '10px 16px' }}>
+
+                          {/* Items Table */}
+                          {s.items && s.items.length > 0 && (
+                            <table style={{ width: '100%', minWidth: 'unset' }}>
+                              <thead>
+                                <tr>
+                                  <th style={{ fontSize: 10 }}>#</th>
+                                  <th style={{ fontSize: 10 }}>Item Description</th>
+                                  <th style={{ fontSize: 10 }}>Serial / IMEI</th>
+                                  <th style={{ fontSize: 10 }}>Qty</th>
+                                  <th style={{ fontSize: 10 }}>Unit Price</th>
+                                  <th style={{ fontSize: 10 }}>Total Invoice</th>
+                                  <th style={{ fontSize: 10 }}>Unit Cost</th>
+                                  <th style={{ fontSize: 10 }}>Total Cost</th>
+                                  <th style={{ fontSize: 10 }}>Supplier</th>
                                 </tr>
-                              ))}
-                              <tr style={{ background: '#EEF2FF' }}>
-                                <td colSpan={5} style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}>TOTAL</td>
-                                <td style={{ fontSize: 12, fontWeight: 700, color: '#10B981' }}>
-                                  Rs. {s.items.reduce((sum, item) => sum + (parseFloat(item.invoice_value || 0) * parseInt(item.qty || 1)), 0).toLocaleString()}
-                                </td>
-                                <td></td>
-                                <td style={{ fontSize: 12, fontWeight: 700, color: '#EF4444' }}>
-                                  Rs. {s.items.reduce((sum, item) => sum + (parseFloat(item.cost || 0) * parseInt(item.qty || 1)), 0).toLocaleString()}
-                                </td>
-                                <td></td>
-                              </tr>
-                            </tbody>
-                          </table>
+                              </thead>
+                              <tbody>
+                                {s.items.map((item, idx) => (
+                                  <tr key={item.id}>
+                                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{idx + 1}</td>
+                                    <td style={{ fontSize: 12 }}>{item.item_description}</td>
+                                    <td style={{ fontSize: 12, fontFamily: 'monospace' }}>{item.serial_imei}</td>
+                                    <td style={{ fontSize: 12, fontWeight: 700, textAlign: 'center' }}>{item.qty || 1}</td>
+                                    <td style={{ fontSize: 12 }}>
+                                      {item.invoice_value ? `Rs. ${Number(item.invoice_value).toLocaleString()}` : '-'}
+                                    </td>
+                                    <td style={{ fontSize: 12, fontWeight: 700, color: '#10B981' }}>
+                                      {item.invoice_value ? `Rs. ${(parseFloat(item.invoice_value) * parseInt(item.qty || 1)).toLocaleString()}` : '-'}
+                                    </td>
+                                    <td style={{ fontSize: 12 }}>
+                                      {item.cost ? `Rs. ${Number(item.cost).toLocaleString()}` : '-'}
+                                    </td>
+                                    <td style={{ fontSize: 12, fontWeight: 700, color: '#EF4444' }}>
+                                      {item.cost ? `Rs. ${(parseFloat(item.cost) * parseInt(item.qty || 1)).toLocaleString()}` : '-'}
+                                    </td>
+                                    <td style={{ fontSize: 12 }}>{item.supplier_name || '-'}</td>
+                                  </tr>
+                                ))}
+                                <tr style={{ background: '#EEF2FF' }}>
+                                  <td colSpan={5} style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}>TOTAL</td>
+                                  <td style={{ fontSize: 12, fontWeight: 700, color: '#10B981' }}>
+                                    Rs. {s.items.reduce((sum, item) => sum + (parseFloat(item.invoice_value || 0) * parseInt(item.qty || 1)), 0).toLocaleString()}
+                                  </td>
+                                  <td></td>
+                                  <td style={{ fontSize: 12, fontWeight: 700, color: '#EF4444' }}>
+                                    Rs. {s.items.reduce((sum, item) => sum + (parseFloat(item.cost || 0) * parseInt(item.qty || 1)), 0).toLocaleString()}
+                                  </td>
+                                  <td></td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          )}
+
+                          {/* Extra Info — INV No, Cashier, Google Review, Remarks */}
+                          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 12, paddingTop: 10, borderTop: '1px solid #E0E7FF' }}>
+                            {s.inv_no && (
+                              <div>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>INV No.</div>
+                                <div style={{ fontSize: 13, fontWeight: 600 }}>{s.inv_no}</div>
+                              </div>
+                            )}
+                            {s.acc_inv_no && (
+                              <div>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>ACC INV No.</div>
+                                <div style={{ fontSize: 13, fontWeight: 600 }}>{s.acc_inv_no}</div>
+                              </div>
+                            )}
+                            {s.cashier && (
+                              <div>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>Cashier</div>
+                                <div style={{ fontSize: 13, fontWeight: 600 }}>{s.cashier}</div>
+                              </div>
+                            )}
+                            {s.google_review && (
+                              <div>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>Google Review</div>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: s.google_review === 'YES' ? '#10B981' : '#EF4444' }}>
+                                  {s.google_review}
+                                </div>
+                              </div>
+                            )}
+                            {s.remarks && (
+                              <div style={{ flexBasis: '100%' }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', marginBottom: 4 }}>Remarks</div>
+                                <div style={{ fontSize: 13, background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 6, padding: '6px 10px', color: '#92400E' }}>
+                                  📝 {s.remarks}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
                         </td>
                       </tr>
                     )}
@@ -533,12 +573,12 @@ export default function SalesEntry() {
             </div>
             <div className="modal-body">
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 4 }}>Customer</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Customer</div>
                 <div style={{ fontWeight: 700, fontSize: 15 }}>{outModal.sale.customer_name}</div>
               </div>
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 4 }}>Items</div>
-                <div style={{ fontWeight: 600, fontSize: 13 }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Items</div>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>
                   {outModal.sale.items?.map(i => i.item_description).join(', ')}
                 </div>
               </div>
