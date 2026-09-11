@@ -30,9 +30,8 @@ export default function SalesEntry() {
   const [sales, setSales] = useState([]);
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [branch, setBranch] = useState(user?.role === 'admin' ? 'Prime' : user?.branch);
-  const [modal, setModal] = useState(null);
+  const [modal, setModal] = useState(false);
   const [form, setForm] = useState(empty(branch, date));
-  const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [expandedRow, setExpandedRow] = useState(null);
@@ -47,36 +46,15 @@ export default function SalesEntry() {
 
   const openAdd = () => {
     setForm(empty(branch, date));
-    setEditId(null);
-    setModal('add');
-  };
-
-  const openEdit = (sale) => {
-    setForm({
-      ...sale,
-      sale_date: sale.sale_date ? format(new Date(sale.sale_date), 'yyyy-MM-dd') : date,
-      items: sale.items && sale.items.length > 0 ? sale.items.map(i => ({
-        ...i,
-        invoice_value: i.invoice_value || '',
-        cost: i.cost || '',
-        supplier_name: i.supplier_name || '',
-        qty: i.qty || '1'
-      })) : [emptyItem()]
-    });
-    setEditId(sale.id);
-    setModal('edit');
+    setModal(true);
   };
 
   const handleSave = async () => {
     if (saving) return;
     setSaving(true);
     try {
-      if (editId) {
-        await api.put(`/sales/${editId}`, form);
-      } else {
-        await api.post('/sales', form);
-      }
-      setModal(null);
+      await api.post('/sales', form);
+      setModal(false);
       fetchSales();
     } catch (err) {
       alert(err.response?.data?.error || 'Error saving');
@@ -174,7 +152,7 @@ export default function SalesEntry() {
                   <th>Payment</th>
                   <th>Salesperson</th>
                   <th>Out</th>
-                  <th>Actions</th>
+                  <th>Delete</th>
                 </tr>
               </thead>
               <tbody>
@@ -203,10 +181,7 @@ export default function SalesEntry() {
                         }}>{s.out_status || 'NO'}</span>
                       </td>
                       <td>
-                        <div className="flex gap-2">
-                          <button className="btn btn-outline btn-sm" onClick={() => openEdit(s)}>✏️</button>
-                          <button className="btn btn-danger btn-sm" onClick={() => setDeleteConfirm(s.id)}>🗑</button>
-                        </div>
+                        <button className="btn btn-danger btn-sm" onClick={() => setDeleteConfirm(s.id)}>🗑</button>
                       </td>
                     </tr>
 
@@ -250,7 +225,6 @@ export default function SalesEntry() {
                                   <td style={{ fontSize: 12 }}>{item.supplier_name || '-'}</td>
                                 </tr>
                               ))}
-                              {/* Total Row */}
                               <tr style={{ background: '#EEF2FF' }}>
                                 <td colSpan={5} style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}>TOTAL</td>
                                 <td style={{ fontSize: 12, fontWeight: 700, color: '#10B981' }}>
@@ -275,13 +249,13 @@ export default function SalesEntry() {
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Add Modal */}
       {modal && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setModal(null)}>
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setModal(false)}>
           <div className="modal">
             <div className="modal-header">
-              <h3>{modal === 'add' ? '➕ Add New Sale' : '✏️ Edit Sale'}</h3>
-              <button className="btn btn-ghost btn-sm" onClick={() => setModal(null)}>✕</button>
+              <h3>➕ Add New Sale</h3>
+              <button className="btn btn-ghost btn-sm" onClick={() => setModal(false)}>✕</button>
             </div>
             <div className="modal-body">
 
@@ -354,7 +328,6 @@ export default function SalesEntry() {
                       )}
                     </div>
 
-                    {/* Item Description */}
                     <div className="form-group">
                       <label>Item Description</label>
                       <input className="form-control" placeholder="e.g. Apple iPhone 17 Pro Max 256GB"
@@ -362,7 +335,6 @@ export default function SalesEntry() {
                         onChange={e => setItem(index, 'item_description', e.target.value)} />
                     </div>
 
-                    {/* IMEI + Qty */}
                     <div className="grid-2">
                       <div className="form-group">
                         <label>Serial Number / IMEI</label>
@@ -373,31 +345,24 @@ export default function SalesEntry() {
                       </div>
                       <div className="form-group">
                         <label>Qty</label>
-                        <input
-                          className="form-control"
-                          placeholder="1"
+                        <input className="form-control" placeholder="1"
                           inputMode="numeric"
                           value={item.qty}
                           onChange={e => setItem(index, 'qty', e.target.value)} />
                       </div>
                     </div>
 
-                    {/* Invoice Value + Cost */}
                     <div className="grid-2">
                       <div className="form-group">
                         <label>Invoice Value / Unit Price (Rs.)</label>
-                        <input
-                          className="form-control"
-                          placeholder="0.00"
+                        <input className="form-control" placeholder="0.00"
                           inputMode="decimal"
                           value={item.invoice_value}
                           onChange={e => setItem(index, 'invoice_value', e.target.value)} />
                       </div>
                       <div className="form-group">
                         <label>Cost / Unit (Rs.)</label>
-                        <input
-                          className="form-control"
-                          placeholder="0.00"
+                        <input className="form-control" placeholder="0.00"
                           inputMode="decimal"
                           value={item.cost}
                           onChange={e => setItem(index, 'cost', e.target.value)} />
@@ -523,9 +488,9 @@ export default function SalesEntry() {
 
             </div>
             <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={() => setModal(null)}>Cancel</button>
+              <button className="btn btn-ghost" onClick={() => setModal(false)}>Cancel</button>
               <button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>
-                {saving ? 'Saving...' : modal === 'add' ? '✅ Add Sale' : '💾 Save'}
+                {saving ? 'Saving...' : '✅ Add Sale'}
               </button>
             </div>
           </div>
