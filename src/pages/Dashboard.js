@@ -6,6 +6,45 @@ import api from '../utils/api';
 const BRANCHES = ['Prime', 'Liberty', 'Marino'];
 const BRANCH_BADGE = { Prime: 'badge-prime', Liberty: 'badge-liberty', Marino: 'badge-marino' };
 
+const ExtraInfo = ({ s }) => (
+  <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 12, paddingTop: 10, borderTop: '1px solid #E0E7FF' }}>
+    {s.inv_no && (
+      <div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>INV No.</div>
+        <div style={{ fontSize: 13, fontWeight: 600 }}>{s.inv_no}</div>
+      </div>
+    )}
+    {s.acc_inv_no && (
+      <div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>ACC INV No.</div>
+        <div style={{ fontSize: 13, fontWeight: 600 }}>{s.acc_inv_no}</div>
+      </div>
+    )}
+    {s.cashier && (
+      <div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>Cashier</div>
+        <div style={{ fontSize: 13, fontWeight: 600 }}>{s.cashier}</div>
+      </div>
+    )}
+    {s.google_review && (
+      <div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>Google Review</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: s.google_review === 'YES' ? '#10B981' : '#EF4444' }}>
+          {s.google_review}
+        </div>
+      </div>
+    )}
+    {s.remarks && (
+      <div style={{ flexBasis: '100%' }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', marginBottom: 4 }}>Remarks</div>
+        <div style={{ fontSize: 13, background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 6, padding: '6px 10px', color: '#92400E' }}>
+          📝 {s.remarks}
+        </div>
+      </div>
+    )}
+  </div>
+);
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [sales, setSales] = useState([]);
@@ -17,8 +56,6 @@ export default function Dashboard() {
   const [imeiSearched, setImeiSearched] = useState(false);
   const [imeiLoading, setImeiLoading] = useState(false);
   const [expandedRow, setExpandedRow] = useState(null);
-
-  // Export date range
   const [showExportPanel, setShowExportPanel] = useState(false);
   const [exportFrom, setExportFrom] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [exportTo, setExportTo] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -35,9 +72,7 @@ export default function Dashboard() {
       setSales(data);
     } catch (err) {
       console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }, [date, branch]);
 
   useEffect(() => { fetchSales(); }, [fetchSales]);
@@ -75,6 +110,15 @@ export default function Dashboard() {
 
   const totalValue = sales.reduce((s, r) => s + parseFloat(r.invoice_value || 0), 0);
   const totalCost = sales.reduce((s, r) => s + parseFloat(r.cost || 0), 0);
+
+  const quickRanges = [
+    { label: 'Today', from: format(new Date(), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
+    { label: 'This Week', from: format(new Date(new Date().setDate(new Date().getDate() - new Date().getDay())), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
+    { label: 'This Month', from: format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
+    { label: 'Last Month', from: format(new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1), 'yyyy-MM-dd'), to: format(new Date(new Date().getFullYear(), new Date().getMonth(), 0), 'yyyy-MM-dd') },
+    { label: 'Last 7 Days', from: format(new Date(new Date().setDate(new Date().getDate() - 7)), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
+    { label: 'Last 30 Days', from: format(new Date(new Date().setDate(new Date().getDate() - 30)), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
+  ];
 
   return (
     <div>
@@ -121,25 +165,16 @@ export default function Dashboard() {
               )}
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn btn-success" onClick={() => handleExport('excel')} disabled={exporting}>
-                  {exporting ? '⏳...' : '⬇ Excel'}
+                  {exporting ? '...' : '⬇ Excel'}
                 </button>
                 <button className="btn btn-outline" onClick={() => handleExport('pdf')} disabled={exporting}>
-                  {exporting ? '⏳...' : '⬇ PDF'}
+                  {exporting ? '...' : '⬇ PDF'}
                 </button>
               </div>
             </div>
-
-            {/* Quick Range Buttons */}
             <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', alignSelf: 'center' }}>QUICK:</span>
-              {[
-                { label: 'Today', from: format(new Date(), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
-                { label: 'This Week', from: format(new Date(new Date().setDate(new Date().getDate() - new Date().getDay())), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
-                { label: 'This Month', from: format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
-                { label: 'Last Month', from: format(new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1), 'yyyy-MM-dd'), to: format(new Date(new Date().getFullYear(), new Date().getMonth(), 0), 'yyyy-MM-dd') },
-                { label: 'Last 7 Days', from: format(new Date(new Date().setDate(new Date().getDate() - 7)), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
-                { label: 'Last 30 Days', from: format(new Date(new Date().setDate(new Date().getDate() - 30)), 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') },
-              ].map(r => (
+              {quickRanges.map(r => (
                 <button key={r.label} onClick={() => { setExportFrom(r.from); setExportTo(r.to); }}
                   style={{
                     background: exportFrom === r.from && exportTo === r.to ? 'var(--primary)' : '#F3F4F6',
@@ -338,10 +373,12 @@ export default function Dashboard() {
                       <td>{s.cashier}</td>
                     </tr>
 
-                    {/* Expanded Items */}
+                    {/* Expanded Row */}
                     {expandedRow === s.id && (
                       <tr>
-                        <td colSpan={11} style={{ background: '#F8F7FF', padding: '8px 16px' }}>
+                        <td colSpan={11} style={{ background: '#F8F7FF', padding: '10px 16px' }}>
+
+                          {/* Items Table */}
                           {s.items && s.items.length > 0 ? (
                             <table style={{ width: '100%', minWidth: 'unset' }}>
                               <thead>
@@ -349,7 +386,9 @@ export default function Dashboard() {
                                   <th style={{ fontSize: 10 }}>#</th>
                                   <th style={{ fontSize: 10 }}>Item Description</th>
                                   <th style={{ fontSize: 10 }}>Serial / IMEI</th>
-                                  <th style={{ fontSize: 10 }}>Invoice Value</th>
+                                  <th style={{ fontSize: 10 }}>Qty</th>
+                                  <th style={{ fontSize: 10 }}>Unit Price</th>
+                                  <th style={{ fontSize: 10 }}>Total Invoice</th>
                                   <th style={{ fontSize: 10 }}>Cost</th>
                                   <th style={{ fontSize: 10 }}>Supplier</th>
                                 </tr>
@@ -360,8 +399,12 @@ export default function Dashboard() {
                                     <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{idx + 1}</td>
                                     <td style={{ fontSize: 12 }}>{item.item_description}</td>
                                     <td style={{ fontSize: 12, fontFamily: 'monospace' }}>{item.serial_imei}</td>
-                                    <td style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>
+                                    <td style={{ fontSize: 12, fontWeight: 700, textAlign: 'center' }}>{item.qty || 1}</td>
+                                    <td style={{ fontSize: 12 }}>
                                       {item.invoice_value ? `Rs. ${Number(item.invoice_value).toLocaleString()}` : '-'}
+                                    </td>
+                                    <td style={{ fontSize: 12, fontWeight: 700, color: '#10B981' }}>
+                                      {item.invoice_value ? `Rs. ${(parseFloat(item.invoice_value) * parseInt(item.qty || 1)).toLocaleString()}` : '-'}
                                     </td>
                                     <td style={{ fontSize: 12 }}>
                                       {item.cost ? `Rs. ${Number(item.cost).toLocaleString()}` : '-'}
@@ -370,12 +413,12 @@ export default function Dashboard() {
                                   </tr>
                                 ))}
                                 <tr style={{ background: '#EEF2FF' }}>
-                                  <td colSpan={3} style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}>TOTAL</td>
-                                  <td style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>
-                                    Rs. {s.items.reduce((sum, item) => sum + parseFloat(item.invoice_value || 0), 0).toLocaleString()}
+                                  <td colSpan={5} style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}>TOTAL</td>
+                                  <td style={{ fontSize: 12, fontWeight: 700, color: '#10B981' }}>
+                                    Rs. {s.items.reduce((sum, item) => sum + (parseFloat(item.invoice_value || 0) * parseInt(item.qty || 1)), 0).toLocaleString()}
                                   </td>
-                                  <td style={{ fontSize: 12, fontWeight: 700 }}>
-                                    Rs. {s.items.reduce((sum, item) => sum + parseFloat(item.cost || 0), 0).toLocaleString()}
+                                  <td style={{ fontSize: 12, fontWeight: 700, color: '#EF4444' }}>
+                                    Rs. {s.items.reduce((sum, item) => sum + (parseFloat(item.cost || 0) * parseInt(item.qty || 1)), 0).toLocaleString()}
                                   </td>
                                   <td></td>
                                 </tr>
@@ -384,6 +427,10 @@ export default function Dashboard() {
                           ) : (
                             <p style={{ fontSize: 12, color: 'var(--text-muted)', padding: '4px 0' }}>No items recorded</p>
                           )}
+
+                          {/* Extra Info — always shows */}
+                          <ExtraInfo s={s} />
+
                         </td>
                       </tr>
                     )}
