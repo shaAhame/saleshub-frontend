@@ -36,6 +36,10 @@ export default function SalesEntry() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [expandedRow, setExpandedRow] = useState(null);
 
+  // Out Status edit — admin only
+  const [outModal, setOutModal] = useState(null); // { id, out_status }
+  const [outSaving, setOutSaving] = useState(false);
+
   const fetchSales = useCallback(async () => {
     const params = { date, branch };
     const { data } = await api.get('/sales', { params });
@@ -69,6 +73,17 @@ export default function SalesEntry() {
     } catch (err) {
       alert(err.response?.data?.error || 'Error deleting');
     }
+  };
+
+  const handleOutStatusSave = async () => {
+    setOutSaving(true);
+    try {
+      await api.put(`/sales/${outModal.id}`, { ...outModal.sale, out_status: outModal.out_status });
+      setOutModal(null);
+      fetchSales();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Error updating');
+    } finally { setOutSaving(false); }
   };
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -152,7 +167,7 @@ export default function SalesEntry() {
                   <th>Payment</th>
                   <th>Salesperson</th>
                   <th>Out</th>
-                  <th>Delete</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -181,7 +196,18 @@ export default function SalesEntry() {
                         }}>{s.out_status || 'NO'}</span>
                       </td>
                       <td>
-                        <button className="btn btn-danger btn-sm" onClick={() => setDeleteConfirm(s.id)}>🗑</button>
+                        <div className="flex gap-2">
+                          {/* Admin only — Out Status edit */}
+                          {user?.role === 'admin' && (
+                            <button
+                              className="btn btn-outline btn-sm"
+                              onClick={() => setOutModal({ id: s.id, out_status: s.out_status || 'NO', sale: s })}
+                              style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
+                              {s.out_status === 'YES' ? '✅ OUT' : '⏳ OUT'}
+                            </button>
+                          )}
+                          <button className="btn btn-danger btn-sm" onClick={() => setDeleteConfirm(s.id)}>🗑</button>
+                        </div>
                       </td>
                     </tr>
 
@@ -491,6 +517,63 @@ export default function SalesEntry() {
               <button className="btn btn-ghost" onClick={() => setModal(false)}>Cancel</button>
               <button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>
                 {saving ? 'Saving...' : '✅ Add Sale'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Out Status Modal — Admin Only */}
+      {outModal && (
+        <div className="modal-overlay">
+          <div className="modal" style={{ maxWidth: 380 }}>
+            <div className="modal-header">
+              <h3>📦 Update Out Status</h3>
+              <button className="btn btn-ghost btn-sm" onClick={() => setOutModal(null)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 4 }}>Customer</div>
+                <div style={{ fontWeight: 700, fontSize: 15 }}>{outModal.sale.customer_name}</div>
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 4 }}>Items</div>
+                <div style={{ fontWeight: 600, fontSize: 13 }}>
+                  {outModal.sale.items?.map(i => i.item_description).join(', ')}
+                </div>
+              </div>
+              <div className="form-group">
+                <label>Out Status</label>
+                <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                  <button
+                    onClick={() => setOutModal(m => ({ ...m, out_status: 'NO' }))}
+                    style={{
+                      flex: 1, padding: '12px', borderRadius: 10, border: '2px solid',
+                      cursor: 'pointer', fontWeight: 700, fontSize: 15,
+                      borderColor: outModal.out_status === 'NO' ? '#EF4444' : '#E5E7EB',
+                      background: outModal.out_status === 'NO' ? '#FEE2E2' : 'white',
+                      color: outModal.out_status === 'NO' ? '#991B1B' : '#6B7280'
+                    }}>
+                    ❌ NO
+                  </button>
+                  <button
+                    onClick={() => setOutModal(m => ({ ...m, out_status: 'YES' }))}
+                    style={{
+                      flex: 1, padding: '12px', borderRadius: 10, border: '2px solid',
+                      cursor: 'pointer', fontWeight: 700, fontSize: 15,
+                      borderColor: outModal.out_status === 'YES' ? '#10B981' : '#E5E7EB',
+                      background: outModal.out_status === 'YES' ? '#D1FAE5' : 'white',
+                      color: outModal.out_status === 'YES' ? '#065F46' : '#6B7280'
+                    }}>
+                    ✅ YES
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={() => setOutModal(null)}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleOutStatusSave} disabled={outSaving} style={{ flex: 1 }}>
+                {outSaving ? 'Saving...' : '💾 Save'}
               </button>
             </div>
           </div>
