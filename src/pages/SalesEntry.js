@@ -106,6 +106,45 @@ export default function SalesEntry() {
   const calcTotal = (items) =>
     items.reduce((s, i) => s + (parseFloat(i.invoice_value || 0) * parseInt(i.qty || 1)), 0);
 
+  const ExtraInfo = ({ s }) => (
+    <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 12, paddingTop: 10, borderTop: '1px solid #E0E7FF' }}>
+      {s.inv_no && (
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>INV No.</div>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>{s.inv_no}</div>
+        </div>
+      )}
+      {s.acc_inv_no && (
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>ACC INV No.</div>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>{s.acc_inv_no}</div>
+        </div>
+      )}
+      {s.cashier && (
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>Cashier</div>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>{s.cashier}</div>
+        </div>
+      )}
+      {s.google_review && (
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>Google Review</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: s.google_review === 'YES' ? '#10B981' : '#EF4444' }}>
+            {s.google_review}
+          </div>
+        </div>
+      )}
+      {s.remarks && (
+        <div style={{ flexBasis: '100%' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', marginBottom: 4 }}>Remarks</div>
+          <div style={{ fontSize: 13, background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 6, padding: '6px 10px', color: '#92400E' }}>
+            📝 {s.remarks}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div>
       <div className="flex items-center gap-3" style={{ marginBottom: 20 }}>
@@ -208,13 +247,13 @@ export default function SalesEntry() {
                       </td>
                     </tr>
 
-                    {/* Expanded Items */}
+                    {/* Expanded Row — always shows when clicked */}
                     {expandedRow === s.id && (
                       <tr>
                         <td colSpan={9} style={{ background: '#F8F7FF', padding: '10px 16px' }}>
 
                           {/* Items Table */}
-                          {s.items && s.items.length > 0 && (
+                          {s.items && s.items.length > 0 ? (
                             <table style={{ width: '100%', minWidth: 'unset' }}>
                               <thead>
                                 <tr>
@@ -264,45 +303,12 @@ export default function SalesEntry() {
                                 </tr>
                               </tbody>
                             </table>
+                          ) : (
+                            <p style={{ fontSize: 12, color: 'var(--text-muted)', padding: '4px 0' }}>No items recorded</p>
                           )}
 
-                          {/* Extra Info — INV No, Cashier, Google Review, Remarks */}
-                          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 12, paddingTop: 10, borderTop: '1px solid #E0E7FF' }}>
-                            {s.inv_no && (
-                              <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>INV No.</div>
-                                <div style={{ fontSize: 13, fontWeight: 600 }}>{s.inv_no}</div>
-                              </div>
-                            )}
-                            {s.acc_inv_no && (
-                              <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>ACC INV No.</div>
-                                <div style={{ fontSize: 13, fontWeight: 600 }}>{s.acc_inv_no}</div>
-                              </div>
-                            )}
-                            {s.cashier && (
-                              <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>Cashier</div>
-                                <div style={{ fontSize: 13, fontWeight: 600 }}>{s.cashier}</div>
-                              </div>
-                            )}
-                            {s.google_review && (
-                              <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>Google Review</div>
-                                <div style={{ fontSize: 13, fontWeight: 600, color: s.google_review === 'YES' ? '#10B981' : '#EF4444' }}>
-                                  {s.google_review}
-                                </div>
-                              </div>
-                            )}
-                            {s.remarks && (
-                              <div style={{ flexBasis: '100%' }}>
-                                <div style={{ fontSize: 10, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', marginBottom: 4 }}>Remarks</div>
-                                <div style={{ fontSize: 13, background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 6, padding: '6px 10px', color: '#92400E' }}>
-                                  📝 {s.remarks}
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                          {/* Extra Info — always shows */}
+                          <ExtraInfo s={s} />
 
                         </td>
                       </tr>
