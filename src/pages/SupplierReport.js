@@ -36,7 +36,7 @@ export default function SupplierReport() {
       const params = new URLSearchParams({ from, to });
       if (branch) params.set('branch', branch);
       if (supplierSearch) params.set('supplier', supplierSearch);
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const url = `${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/sales/supplier-report/export/${type}?${params}`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       const blob = await res.blob();
