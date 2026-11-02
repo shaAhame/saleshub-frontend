@@ -1,83 +1,94 @@
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../utils/api';
+import {
+  getToken, getUser, setSession, clearSession, touch, idleFor, purgeOldStorage
+} from '../utils/session';
 
 const AuthContext = createContext();
 
-const SESSION_TIMEOUT = 3 * 60 * 1000; // 3 minutes in milliseconds
+const SESSION_TIMEOUT = 3 * 60 * 1000;          // 3 minutes of inactivity
+const WARNING_AT = SESSION_TIMEOUT - 30 * 1000;  // warn 30 seconds before
+
+// Old version kept the login in localStorage forever (12 hours) – remove it.
+purgeOldStorage();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    try {
-      const stored = localStorage.getItem('user');
-      return stored ? JSON.parse(stored) : null;
-    } catch { return null; }
+    const u = getUser();
+    // Restored tab / reopened browser after being idle → not logged in
+    if (u && (!getToken() || idleFor() > SESSION_TIMEOUT)) {
+      clearSession();
+      return null;
+    }
+    return u;
   });
-
-  const timeoutRef = useRef(null);
-  const warningRef = useRef(null);
   const [showWarning, setShowWarning] = useState(false);
 
   const logout = useCallback(() => {
+    clearSession();
     setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (warningRef.current) clearTimeout(warningRef.current);
     setShowWarning(false);
   }, []);
 
-  const resetTimer = useCallback(() => {
-    if (!user) return;
-
-    // Clear existing timers
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (warningRef.current) clearTimeout(warningRef.current);
-    setShowWarning(false);
-
-    // Show warning at 2 minutes 30 seconds (30 seconds before logout)
-    warningRef.current = setTimeout(() => {
-      setShowWarning(true);
-    }, SESSION_TIMEOUT - 30000);
-
-    // Auto logout at 3 minutes
-    timeoutRef.current = setTimeout(() => {
-      setShowWarning(false);
-      logout();
-    }, SESSION_TIMEOUT);
-  }, [user, logout]);
-
-  // Reset timer on any user activity
+  // Confirm role + branch with the server (never trust what is stored in the browser)
   useEffect(() => {
     if (!user) return;
+    api.get('/auth/me')
+      .then(({ data }) => {
+        if (data.role !== user.role || data.branch !== user.branch || data.username !== user.username) {
+          setSession(getToken(), data);
+          setUser(data);
+        }
+      })
+      .catch(() => {}); // 401/403 handled by api interceptor
+  }, [user?.id]);
+
+  // Inactivity tracking – based on a timestamp, so it still works after
+  // sleep, background tabs, or a restored browser session.
+  useEffect(() => {
+    if (!user) return;
+    touch();
 
     const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+    let last = 0;
+    const onActivity = () => {
+      const now = Date.now();
+      if (now - last > 1000) { last = now; touch(); }
+    };
+    events.forEach(e => window.addEventListener(e, onActivity, { passive: true }));
 
-    const handleActivity = () => resetTimer();
-
-    events.forEach(e => window.addEventListener(e, handleActivity));
-    resetTimer(); // Start timer on mount
+    const check = () => {
+      if (!getToken()) { logout(); return; }
+      const idle = idleFor();
+      if (idle >= SESSION_TIMEOUT) logout();
+      else setShowWarning(idle >= WARNING_AT);
+    };
+    const interval = setInterval(check, 5000);
+    document.addEventListener('visibilitychange', check);
 
     return () => {
-      events.forEach(e => window.removeEventListener(e, handleActivity));
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (warningRef.current) clearTimeout(warningRef.current);
+      events.forEach(e => window.removeEventListener(e, onActivity));
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', check);
     };
-  }, [user, resetTimer]);
+  }, [user, logout]);
 
   const login = async (username, password) => {
+    clearSession();
     const { data } = await api.post('/auth/login', { username, password });
+    setSession(data.token, data.user);
     setUser(data.user);
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data.user));
     return data;
   };
+
+  const stayLoggedIn = () => { touch(); setShowWarning(false); };
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>
       {children}
 
       {/* Session Warning Popup */}
-      {showWarning && (
+      {showWarning && user && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 99999,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -96,7 +107,7 @@ export function AuthProvider({ children }) {
               You will be automatically logged out in <strong>30 seconds</strong> due to inactivity.
             </div>
             <button
-              onClick={() => { resetTimer(); setShowWarning(false); }}
+              onClick={stayLoggedIn}
               style={{
                 width: '100%', padding: '12px', background: '#4F46E5',
                 color: 'white', border: 'none', borderRadius: 10,

@@ -106,7 +106,7 @@ export default function Dashboard() {
       if (exportFrom) params.set('from', exportFrom);
       if (exportTo) params.set('to', exportTo);
       if (exportBranch) params.set('branch', exportBranch);
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const url = `${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/sales/export/${type}?${params}`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       const blob = await res.blob();

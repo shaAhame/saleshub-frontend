@@ -47,7 +47,7 @@ export default function PurchaseInvoice() {
   };
 
   const downloadFile = async (url, filename) => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) throw new Error('Download failed');
     const blob = await res.blob();
